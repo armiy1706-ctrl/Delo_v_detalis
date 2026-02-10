@@ -31,12 +31,3 @@
     "vite": "^5.4.10"
   }
 }
-2. Проверьте файл vite.config.ts
-Если его нет в корне, создайте его и вставьте:
-
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-
-export default defineConfig({
-  plugins: [react()],
-})
