@@ -54,6 +54,9 @@ app.post("/make-server-c325e4cf/orders", async (c) => {
         const text = `🌸 *Новый заказ!* \n\n` +
                      `📦 *ID:* ${orderId}\n` +
                      `👤 *Клиент:* ${orderData.customer.name}\n` +
+                     `📞 *Тел:* ${orderData.customer.phone}\n` +
+                     `📍 *Адрес:* ${orderData.customer.city}, ${orderData.customer.address}\n` +
+                     `⏰ *Доставка:* ${orderData.customer.deliveryDate} в ${orderData.customer.deliveryTime}\n` +
                      `💰 *Сумма:* ${orderData.total} ₽\n\n` +
                      `Букеты:\n${orderData.items.map((i: any) => `- ${i.name} (${i.quantity} шт)`).join('\n')}`;
         
