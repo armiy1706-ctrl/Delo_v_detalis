@@ -29,6 +29,7 @@ interface CustomerInfo {
   city: string;
   zipCode: string;
   country: string;
+  tgId?: number;
 }
 
 const PRODUCTS: Product[] = [
@@ -101,9 +102,10 @@ export default function App() {
       tg.expand();
       if (tg.initDataUnsafe?.user) {
         setTgUser(tg.initDataUnsafe.user);
-        // Pre-fill name if available
+        // Pre-fill name and tgId
         setCustomerInfo(prev => ({
           ...prev,
+          tgId: tg.initDataUnsafe.user.id,
           name: prev.name || `${tg.initDataUnsafe.user.first_name} ${tg.initDataUnsafe.user.last_name || ''}`.trim()
         }));
       }
