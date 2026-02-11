@@ -77,8 +77,9 @@ const PRODUCTS: Product[] = [
 ];
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'cart' | 'checkout' | 'confirmation' | 'profile'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'cart' | 'checkout' | 'confirmation' | 'profile' | 'favorites'>('home');
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [favorites, setFavorites] = useState<number[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
@@ -108,7 +109,25 @@ export default function App() {
         }));
       }
     }
+    
+    // Load favorites from local storage if available
+    const savedFavorites = localStorage.getItem('bloom_favorites');
+    if (savedFavorites) {
+      setFavorites(JSON.parse(savedFavorites));
+    }
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('bloom_favorites', JSON.stringify(favorites));
+  }, [favorites]);
+
+  const toggleFavorite = (product: Product) => {
+    setFavorites(prev => 
+      prev.includes(product.id) 
+        ? prev.filter(id => id !== product.id) 
+        : [...prev, product.id]
+    );
+  };
 
   const addToCart = (product: Product, quantity: number = 1) => {
     setCart(prev => {
@@ -201,8 +220,8 @@ export default function App() {
             className="flex items-center gap-2 cursor-pointer" 
             onClick={() => setCurrentPage('home')}
           >
-            <div className="w-8 h-8 bg-rose-500 rounded-lg flex items-center justify-center text-white font-bold">B</div>
-            <span className="text-xl font-bold bg-gradient-to-r from-rose-600 to-rose-400 bg-clip-text text-transparent">Bloom & Stem</span>
+            <div className="w-8 h-8 bg-[#D4AF37] rounded-lg flex items-center justify-center text-white font-bold">B</div>
+            <span className="text-xl font-bold bg-gradient-to-r from-[#D4AF37] to-[#B8860B] bg-clip-text text-transparent serif">Bloom & Stem</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -215,7 +234,7 @@ export default function App() {
           >
             <ShoppingCart className="w-6 h-6" />
             {cartCount > 0 && (
-              <span className="absolute top-1 right-1 w-4 h-4 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+              <span className="absolute top-1 right-1 w-4 h-4 bg-[#D4AF37] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                 {cartCount}
               </span>
             )}
@@ -234,29 +253,74 @@ export default function App() {
               className="px-4 pt-6 space-y-8"
             >
               {/* Hero */}
-              <section className="relative h-48 rounded-3xl overflow-hidden shadow-lg">
+              <section className="relative h-48 rounded-3xl overflow-hidden shadow-lg border border-white/20">
                 <ImageWithFallback
                   src="https://images.unsplash.com/photo-1745570647583-08120794d68d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzcHJpbmclMjBmbG9yYWwlMjBhcnJhbmdlbWVudCUyMHBhc3RlbHxlbnwxfHx8fDE3NzA2MTk4NzB8MA&ixlib=rb-4.1.0&q=80&w=1080"
                   alt="Floral background"
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-6">
-                  <h1 className="text-2xl font-bold text-white mb-1">Дарите Эмоции</h1>
-                  <p className="text-rose-50 text-sm">Свежие букеты с доставкой за 60 минут</p>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6">
+                  <h1 className="text-2xl font-bold text-white mb-1 serif">Дарите Эмоции</h1>
+                  <p className="text-stone-200 text-sm">Свежие букеты с доставкой за 60 минут</p>
                 </div>
               </section>
 
               {/* Grid */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 pb-8">
                 {PRODUCTS.map(product => (
                   <ProductCard 
                     key={product.id} 
                     product={product} 
+                    isFavorite={favorites.includes(product.id)}
                     onClick={setSelectedProduct}
                     onAddToCart={(p) => addToCart(p, 1)} 
+                    onToggleFavorite={toggleFavorite}
                   />
                 ))}
               </div>
+            </motion.div>
+          )}
+
+          {currentPage === 'favorites' && (
+            <motion.div 
+              key="favorites"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="px-4 pt-6"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <button onClick={() => setCurrentPage('home')} className="p-2 hover:bg-white/20 rounded-full text-white">
+                  <ArrowLeft className="w-6 h-6" />
+                </button>
+                <h2 className="text-2xl font-bold text-white serif">Избранное</h2>
+              </div>
+
+              {favorites.length === 0 ? (
+                <div className="text-center py-20 space-y-4 bg-white/10 rounded-3xl backdrop-blur-sm border border-white/20">
+                  <Heart className="w-12 h-12 text-white/50 mx-auto" />
+                  <p className="text-white font-medium">Ваш список избранного пуст</p>
+                  <button 
+                    onClick={() => setCurrentPage('home')} 
+                    className="px-8 py-3 bg-[#D4AF37] text-white rounded-2xl font-bold shadow-lg"
+                  >
+                    В магазин
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4 pb-12">
+                  {PRODUCTS.filter(p => favorites.includes(p.id)).map(product => (
+                    <ProductCard 
+                      key={product.id} 
+                      product={product} 
+                      isFavorite={true}
+                      onClick={setSelectedProduct}
+                      onAddToCart={(p) => addToCart(p, 1)} 
+                      onToggleFavorite={toggleFavorite}
+                    />
+                  ))}
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -269,27 +333,28 @@ export default function App() {
               className="px-4 pt-6"
             >
               <div className="flex items-center gap-3 mb-6">
-                <button onClick={() => setCurrentPage('home')} className="p-2 hover:bg-stone-100 rounded-full">
+                <button onClick={() => setCurrentPage('home')} className="p-2 hover:bg-white/20 rounded-full text-white">
                   <ArrowLeft className="w-6 h-6" />
                 </button>
-                <h2 className="text-2xl font-bold">Корзина</h2>
+                <h2 className="text-2xl font-bold text-white serif">Корзина</h2>
               </div>
 
               {cart.length === 0 ? (
-                <div className="text-center py-20 space-y-4">
-                  <p className="text-stone-500">Ваша корзина пуста</p>
-                  <button onClick={() => setCurrentPage('home')} className="px-8 py-3 bg-stone-900 text-white rounded-2xl">В магазин</button>
+                <div className="text-center py-20 space-y-4 bg-white/10 rounded-3xl backdrop-blur-sm border border-white/20">
+                  <ShoppingCart className="w-12 h-12 text-white/50 mx-auto" />
+                  <p className="text-white font-medium">Ваша корзина пуста</p>
+                  <button onClick={() => setCurrentPage('home')} className="px-8 py-3 bg-[#D4AF37] text-white rounded-2xl font-bold shadow-lg">В магазин</button>
                 </div>
               ) : (
                 <div className="space-y-6">
                   {cart.map(item => (
-                    <div key={item.id} className="flex gap-4 bg-white p-3 rounded-2xl border border-stone-100 items-center">
+                    <div key={item.id} className="flex gap-4 bg-white p-3 rounded-2xl border border-stone-100 items-center shadow-md">
                       <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0">
                         <ImageWithFallback src={item.image} alt={item.name} className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1">
                         <h4 className="font-semibold text-stone-800">{item.name}</h4>
-                        <p className="text-sm font-bold text-rose-600">{item.price.toLocaleString('ru-RU')} ₽</p>
+                        <p className="text-sm font-bold text-[#D4AF37]">{item.price.toLocaleString('ru-RU')} ₽</p>
                       </div>
                       <div className="flex items-center gap-2 bg-stone-50 p-1 rounded-xl">
                         <button onClick={() => updateQuantity(item.id, -1)} className="w-7 h-7 bg-white rounded-lg">-</button>
@@ -299,14 +364,14 @@ export default function App() {
                       <button onClick={() => removeFromCart(item.id)} className="p-2 text-stone-300"><X className="w-5 h-5" /></button>
                     </div>
                   ))}
-                  <div className="bg-white p-6 rounded-3xl border border-stone-100 space-y-4">
+                  <div className="bg-white p-6 rounded-3xl border border-stone-100 space-y-4 shadow-xl">
                     <div className="flex justify-between items-center">
                       <span className="text-lg font-bold">Итого</span>
-                      <span className="text-2xl font-bold text-rose-600">{total.toLocaleString('ru-RU')} ₽</span>
+                      <span className="text-2xl font-bold text-[#D4AF37]">{total.toLocaleString('ru-RU')} ₽</span>
                     </div>
                     <button 
                       onClick={() => setCurrentPage('checkout')}
-                      className="w-full py-4 bg-rose-600 text-white rounded-2xl font-bold"
+                      className="w-full py-4 bg-[#D4AF37] text-white rounded-2xl font-bold shadow-lg hover:bg-[#B8860B] transition-colors"
                     >
                       К оформлению
                     </button>
@@ -325,10 +390,10 @@ export default function App() {
               className="px-4 pt-6"
             >
               <div className="flex items-center gap-3 mb-6">
-                <button onClick={() => setCurrentPage('cart')} className="p-2 hover:bg-stone-100 rounded-full">
+                <button onClick={() => setCurrentPage('cart')} className="p-2 hover:bg-white/20 rounded-full text-white">
                   <ArrowLeft className="w-6 h-6" />
                 </button>
-                <h2 className="text-2xl font-bold">Оформление</h2>
+                <h2 className="text-2xl font-bold text-white serif">Оформление</h2>
               </div>
 
               <CheckoutForm 
@@ -338,9 +403,9 @@ export default function App() {
               />
               
               {isSubmitting && (
-                <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-[100] flex items-center justify-center">
-                  <div className="flex flex-col items-center gap-3">
-                    <Loader2 className="w-10 h-10 text-rose-500 animate-spin" />
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center">
+                  <div className="bg-white p-8 rounded-3xl flex flex-col items-center gap-3 shadow-2xl">
+                    <Loader2 className="w-10 h-10 text-[#D4AF37] animate-spin" />
                     <p className="font-medium text-stone-600">Сохраняем заказ...</p>
                   </div>
                 </div>
@@ -373,29 +438,39 @@ export default function App() {
         onAddToCart={addToCart}
       />
 
-      {(currentPage === 'home' || currentPage === 'profile') && (
-        <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-stone-100 px-8 py-3 flex justify-between items-center z-40 max-w-md mx-auto rounded-t-2xl shadow-2xl">
+      {(currentPage === 'home' || currentPage === 'profile' || currentPage === 'favorites' || currentPage === 'cart') && (
+        <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-stone-100 px-4 py-3 flex justify-between items-center z-40 max-w-md mx-auto rounded-t-3xl shadow-[0_-10px_30px_rgba(0,0,0,0.1)]">
           <button 
-            className={`flex flex-col items-center gap-1 ${currentPage === 'home' ? 'text-rose-600' : 'text-stone-400'}`} 
+            className={`flex flex-col items-center gap-1 flex-1 transition-all ${currentPage === 'home' ? 'text-[#D4AF37] scale-110' : 'text-stone-400'}`} 
             onClick={() => setCurrentPage('home')}
           >
             <Search className="w-6 h-6" />
             <span className="text-[10px] font-bold uppercase tracking-tighter">Магазин</span>
           </button>
+          
           <button 
-            className={`flex flex-col items-center gap-1 relative ${currentPage === 'cart' ? 'text-rose-600' : 'text-stone-400 hover:text-rose-500'} transition-colors`}
+            className={`flex flex-col items-center gap-1 flex-1 transition-all ${currentPage === 'favorites' ? 'text-[#D4AF37] scale-110' : 'text-stone-400'}`} 
+            onClick={() => setCurrentPage('favorites')}
+          >
+            <Heart className={`w-6 h-6 ${currentPage === 'favorites' ? 'fill-current' : ''}`} />
+            <span className="text-[10px] font-bold uppercase tracking-tighter">Избранное</span>
+          </button>
+
+          <button 
+            className={`flex flex-col items-center gap-1 flex-1 relative transition-all ${currentPage === 'cart' ? 'text-[#D4AF37] scale-110' : 'text-stone-400'}`}
             onClick={() => setCurrentPage('cart')}
           >
             <ShoppingCart className="w-6 h-6" />
             <span className="text-[10px] font-bold uppercase tracking-tighter">Корзина</span>
             {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+              <span className="absolute top-0 right-1/4 w-4 h-4 bg-[#D4AF37] text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
                 {cartCount}
               </span>
             )}
           </button>
+
           <button 
-            className={`flex flex-col items-center gap-1 ${currentPage === 'profile' ? 'text-rose-600' : 'text-stone-400'}`}
+            className={`flex flex-col items-center gap-1 flex-1 transition-all ${currentPage === 'profile' ? 'text-[#D4AF37] scale-110' : 'text-stone-400'}`}
             onClick={() => setCurrentPage('profile')}
           >
             <User className="w-6 h-6" />
