@@ -62,21 +62,21 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user }) => {
       className="px-4 pt-6 space-y-6 pb-12"
     >
       <div className="flex items-center gap-3 mb-2">
-        <button onClick={() => setActiveSection('main')} className="p-2 hover:bg-stone-100 rounded-full transition-colors">
+        <button onClick={() => setActiveSection('main')} className="p-2 hover:bg-white/20 rounded-full text-white transition-colors">
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <h2 className="text-2xl font-bold text-stone-900">История заказов</h2>
+        <h2 className="text-2xl font-bold text-white serif">История заказов</h2>
       </div>
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <Loader2 className="w-10 h-10 text-rose-500 animate-spin" />
-          <p className="text-stone-500">Загружаем заказы...</p>
+          <Loader2 className="w-10 h-10 text-[#D4AF37] animate-spin" />
+          <p className="text-white/80">Загружаем заказы...</p>
         </div>
       ) : orders.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-stone-200">
-          <Package className="w-12 h-12 text-stone-200 mx-auto mb-4" />
-          <p className="text-stone-500">У вас пока нет заказов</p>
+        <div className="text-center py-20 bg-white/10 rounded-3xl border border-dashed border-white/20 backdrop-blur-sm">
+          <Package className="w-12 h-12 text-white/30 mx-auto mb-4" />
+          <p className="text-white/80">У вас пока нет заказов</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -90,7 +90,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user }) => {
                     {new Date(order.createdAt).toLocaleDateString('ru-RU')}
                   </div>
                 </div>
-                <span className="bg-rose-50 text-rose-600 text-xs font-bold px-2.5 py-1 rounded-full uppercase">
+                <span className="bg-amber-50 text-[#D4AF37] text-xs font-bold px-2.5 py-1 rounded-full uppercase">
                   Завершен
                 </span>
               </div>
@@ -98,7 +98,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user }) => {
                 <p className="text-stone-600 text-sm">
                   {order.items.length} {order.items.length === 1 ? 'букет' : 'букета'}
                 </p>
-                <p className="font-bold text-rose-600">{order.total.toLocaleString('ru-RU')} ₽</p>
+                <p className="font-bold text-[#D4AF37]">{order.total.toLocaleString('ru-RU')} ₽</p>
               </div>
             </div>
           ))}
@@ -114,18 +114,18 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user }) => {
       className="px-4 pt-6 space-y-6 pb-12"
     >
       <div className="flex items-center gap-3 mb-2">
-        <button onClick={() => setActiveSection('main')} className="p-2 hover:bg-stone-100 rounded-full transition-colors">
+        <button onClick={() => setActiveSection('main')} className="p-2 hover:bg-white/20 rounded-full text-white transition-colors">
           <ArrowLeft className="w-6 h-6" />
         </button>
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-stone-100 rounded-xl">
+          <div className="p-2 bg-white/20 rounded-xl">
             {icon}
           </div>
-          <h2 className="text-xl font-bold text-stone-900 leading-tight">{title}</h2>
+          <h2 className="text-xl font-bold text-white serif leading-tight">{title}</h2>
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-3xl border border-stone-100 shadow-sm text-stone-600 space-y-4 leading-relaxed">
+      <div className="bg-white p-6 rounded-3xl border border-stone-100 shadow-lg text-stone-600 space-y-4 leading-relaxed">
         {content.split('\n\n').map((paragraph, idx) => (
           <p key={idx}>{paragraph}</p>
         ))}
@@ -139,17 +139,17 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user }) => {
   if (activeSection === 'history') return renderHistory();
   if (activeSection === 'privacy') return renderContentPage(
     'Политика обработки данных', 
-    <FileText className="w-5 h-5 text-rose-500" />,
+    <FileText className="w-5 h-5 text-[#D4AF37]" />,
     "Мы серьезно относимся к защите ваших данных. При использовании Bloom & Stem вы доверяете нам свою личную информацию.\n\nМы собираем только необходимые данные: ваше имя, номер телефона и адрес для обеспечения доставки заказов. Ваши данные не передаются третьим лицам, за исключением случаев, предусмотренных законодательством.\n\nИспользуя сервис, вы соглашаетесь на хранение и обработку предоставленной информации в рамках работы приложения."
   );
   if (activeSection === 'delivery') return renderContentPage(
     'Доставка и оплата', 
-    <Truck className="w-5 h-5 text-amber-500" />,
+    <Truck className="w-5 h-5 text-[#D4AF37]" />,
     "Доставка осуществляется ежедневно с 08:00 до 22:00. Мы доставляем заказы в пределах города и области.\n\nСтоимость доставки рассчитывается автоматически при оформлении заказа. Мы гарантируем свежесть цветов и своевременность прибытия курьера.\n\nОплата возможна онлайн через Telegram Pay, банковской картой или наличными при получении. Все платежи защищены."
   );
   if (activeSection === 'returns') return renderContentPage(
     'Условия возврата', 
-    <RotateCcw className="w-5 h-5 text-blue-500" />,
+    <RotateCcw className="w-5 h-5 text-[#D4AF37]" />,
     "Согласно законодательству РФ, срезанные цветы и горшечные растения надлежащего качества возврату и обмену не подлежат.\n\nОднако, мы дорожим своей репутацией. Если вы получили некачественный товар, пожалуйста, свяжитесь с нами в течение 2 часов после получения, приложив фото. Мы заменим букет или вернем средства, если претензия обоснована."
   );
 
@@ -161,7 +161,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user }) => {
       className="px-4 pt-6 space-y-6 pb-12"
     >
       <div className="flex flex-col items-center text-center space-y-4">
-        <div className="w-24 h-24 bg-rose-100 rounded-full flex items-center justify-center text-rose-500 shadow-inner overflow-hidden border-4 border-white">
+        <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center text-white shadow-inner overflow-hidden border-4 border-white">
           {user?.photo_url ? (
             <img src={user.photo_url} alt="Profile" className="w-full h-full object-cover" />
           ) : (
@@ -169,36 +169,36 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user }) => {
           )}
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-stone-900">
+          <h2 className="text-2xl font-bold text-white serif">
             {user ? `${user.first_name} ${user.last_name || ''}` : 'Гость'}
           </h2>
-          <p className="text-stone-500 text-sm">@{user?.username || 'user'}</p>
+          <p className="text-white/70 text-sm">@{user?.username || 'user'}</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl border border-stone-100 divide-y divide-stone-50 shadow-sm overflow-hidden">
+      <div className="bg-white/10 rounded-3xl border border-white/20 divide-y divide-white/10 backdrop-blur-sm shadow-sm overflow-hidden">
         <div className="p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-50 text-blue-500 rounded-xl">
+            <div className="p-2 bg-white/20 text-white rounded-xl">
               <IdCard className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-[10px] text-stone-400 font-bold uppercase tracking-wider">Telegram ID</p>
-              <p className="font-mono text-stone-700 text-sm">{user?.id || 'Не определен'}</p>
+              <p className="text-[10px] text-white/50 font-bold uppercase tracking-wider">Telegram ID</p>
+              <p className="font-mono text-white text-sm">{user?.id || 'Не определен'}</p>
             </div>
           </div>
         </div>
       </div>
 
       <div className="space-y-3">
-        <h3 className="text-xs font-bold text-stone-400 uppercase tracking-widest px-4">Сервис и поддержка</h3>
-        <div className="bg-white rounded-3xl border border-stone-100 divide-y divide-stone-50 shadow-sm overflow-hidden">
+        <h3 className="text-xs font-bold text-white/60 uppercase tracking-widest px-4">Сервис и поддержка</h3>
+        <div className="bg-white rounded-3xl border border-stone-100 divide-y divide-stone-50 shadow-lg overflow-hidden">
           <button 
             onClick={() => setActiveSection('history')}
             className="w-full p-4 flex items-center justify-between hover:bg-stone-50 active:bg-stone-100 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-rose-50 text-rose-500 rounded-xl">
+              <div className="p-2 bg-amber-50 text-[#D4AF37] rounded-xl">
                 <Package className="w-5 h-5" />
               </div>
               <span className="font-medium text-stone-700">История заказов</span>
@@ -211,7 +211,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user }) => {
             className="w-full p-4 flex items-center justify-between hover:bg-stone-50 active:bg-stone-100 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-rose-50 text-rose-500 rounded-xl">
+              <div className="p-2 bg-amber-50 text-[#D4AF37] rounded-xl">
                 <FileText className="w-5 h-5" />
               </div>
               <span className="font-medium text-stone-700">Политика обработки данных</span>
@@ -224,7 +224,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user }) => {
             className="w-full p-4 flex items-center justify-between hover:bg-stone-50 active:bg-stone-100 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-50 text-amber-500 rounded-xl">
+              <div className="p-2 bg-amber-50 text-[#D4AF37] rounded-xl">
                 <Truck className="w-5 h-5" />
               </div>
               <span className="font-medium text-stone-700">Доставка и оплата</span>
@@ -237,7 +237,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user }) => {
             className="w-full p-4 flex items-center justify-between hover:bg-stone-50 active:bg-stone-100 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-50 text-blue-500 rounded-xl">
+              <div className="p-2 bg-amber-50 text-[#D4AF37] rounded-xl">
                 <RotateCcw className="w-5 h-5" />
               </div>
               <span className="font-medium text-stone-700">Условия возврата</span>
@@ -257,13 +257,13 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user }) => {
         </div>
       </div>
 
-      <button className="w-full py-4 text-rose-500 font-semibold flex items-center justify-center gap-2 hover:bg-rose-50 rounded-2xl transition-colors mt-4">
+      <button className="w-full py-4 text-white font-semibold flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 rounded-2xl transition-colors mt-4 border border-white/20">
         <LogOut className="w-5 h-5" />
         Выйти из аккаунта
       </button>
 
       <div className="text-center pt-4">
-        <p className="text-[10px] text-stone-300 font-bold uppercase tracking-[0.2em]">Bloom & Stem v1.3.0</p>
+        <p className="text-[10px] text-white/40 font-bold uppercase tracking-[0.2em]">Bloom & Stem v1.4.0</p>
       </div>
     </motion.div>
   );
