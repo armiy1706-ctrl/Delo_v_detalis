@@ -5,6 +5,7 @@ import { ProductCard } from './components/ProductCard';
 import { ProductModal } from './components/ProductModal';
 import { CheckoutForm } from './components/CheckoutForm';
 import { OrderConfirmation } from './components/OrderConfirmation';
+import { ProfilePage } from './components/ProfilePage';
 import { ImageWithFallback } from './components/figma/ImageWithFallback';
 import { projectId, publicAnonKey } from './utils/supabase/info';
 
@@ -76,11 +77,12 @@ const PRODUCTS: Product[] = [
 ];
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'cart' | 'checkout' | 'confirmation'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'cart' | 'checkout' | 'confirmation' | 'profile'>('home');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [tgUser, setTgUser] = useState<any>(null);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     name: '',
     email: '',
@@ -90,6 +92,23 @@ export default function App() {
     zipCode: '',
     country: 'Россия'
   });
+
+  useEffect(() => {
+    // Initialize Telegram WebApp
+    const tg = (window as any).Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+      if (tg.initDataUnsafe?.user) {
+        setTgUser(tg.initDataUnsafe.user);
+        // Pre-fill name if available
+        setCustomerInfo(prev => ({
+          ...prev,
+          name: prev.name || `${tg.initDataUnsafe.user.first_name} ${tg.initDataUnsafe.user.last_name || ''}`.trim()
+        }));
+      }
+    }
+  }, []);
 
   const addToCart = (product: Product, quantity: number = 1) => {
     setCart(prev => {
@@ -341,6 +360,10 @@ export default function App() {
               />
             </motion.div>
           )}
+
+          {currentPage === 'profile' && (
+            <ProfilePage key="profile" user={tgUser} />
+          )}
         </AnimatePresence>
       </main>
 
@@ -351,14 +374,17 @@ export default function App() {
         onAddToCart={addToCart}
       />
 
-      {currentPage === 'home' && (
+      {(currentPage === 'home' || currentPage === 'profile') && (
         <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-stone-100 px-8 py-3 flex justify-between items-center z-40 max-w-md mx-auto rounded-t-2xl shadow-2xl">
-          <button className="flex flex-col items-center gap-1 text-rose-600" onClick={() => setCurrentPage('home')}>
+          <button 
+            className={`flex flex-col items-center gap-1 ${currentPage === 'home' ? 'text-rose-600' : 'text-stone-400'}`} 
+            onClick={() => setCurrentPage('home')}
+          >
             <Search className="w-6 h-6" />
             <span className="text-[10px] font-bold uppercase tracking-tighter">Магазин</span>
           </button>
           <button 
-            className="flex flex-col items-center gap-1 text-stone-400 hover:text-rose-500 transition-colors relative"
+            className={`flex flex-col items-center gap-1 relative ${currentPage === 'cart' ? 'text-rose-600' : 'text-stone-400 hover:text-rose-500'} transition-colors`}
             onClick={() => setCurrentPage('cart')}
           >
             <ShoppingCart className="w-6 h-6" />
@@ -369,7 +395,10 @@ export default function App() {
               </span>
             )}
           </button>
-          <button className="flex flex-col items-center gap-1 text-stone-400">
+          <button 
+            className={`flex flex-col items-center gap-1 ${currentPage === 'profile' ? 'text-rose-600' : 'text-stone-400'}`}
+            onClick={() => setCurrentPage('profile')}
+          >
             <User className="w-6 h-6" />
             <span className="text-[10px] font-bold uppercase tracking-tighter">Профиль</span>
           </button>
