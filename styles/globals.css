@@ -177,6 +177,10 @@
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
   }
+
+  .serif {
+    font-family: serif;
+  }
 }
 
 html {
