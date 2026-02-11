@@ -1,9 +1,8 @@
-@import "tailwindcss";
 @custom-variant dark (&:is(.dark *));
 
 :root {
   --font-size: 14px;
-  --background: #ffffff;
+  --background: #0ABAB5;
   --foreground: oklch(0.145 0 0);
   --card: #ffffff;
   --card-foreground: oklch(0.145 0 0);
