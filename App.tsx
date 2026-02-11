@@ -220,8 +220,8 @@ export default function App() {
             className="flex items-center gap-2 cursor-pointer" 
             onClick={() => setCurrentPage('home')}
           >
-            <div className="w-8 h-8 bg-[#D4AF37] rounded-lg flex items-center justify-center text-white font-bold">B</div>
-            <span className="text-xl font-bold bg-gradient-to-r from-[#D4AF37] to-[#B8860B] bg-clip-text text-transparent serif">Bloom & Stem</span>
+            <div className="w-8 h-8 bg-[#D4AF37] rounded-lg flex items-center justify-center text-white font-bold">D</div>
+            <span className="text-xl font-bold bg-gradient-to-r from-[#D4AF37] to-[#B8860B] bg-clip-text text-transparent serif">Дело в деталях</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
