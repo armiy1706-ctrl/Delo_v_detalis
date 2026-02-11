@@ -190,7 +190,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 font-sans text-stone-900 pb-20">
+    <div className="min-h-screen bg-background font-sans text-stone-900 pb-20">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-stone-100 px-4 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
