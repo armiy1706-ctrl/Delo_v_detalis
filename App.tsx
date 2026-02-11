@@ -23,12 +23,11 @@ interface CartItem extends Product {
 
 interface CustomerInfo {
   name: string;
-  email: string;
   phone: string;
   address: string;
   city: string;
-  zipCode: string;
-  country: string;
+  deliveryDate: string;
+  deliveryTime: string;
   tgId?: number;
 }
 
@@ -86,12 +85,11 @@ export default function App() {
   const [tgUser, setTgUser] = useState<any>(null);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     name: '',
-    email: '',
     phone: '',
     address: '',
     city: '',
-    zipCode: '',
-    country: 'Россия'
+    deliveryDate: new Date().toISOString().split('T')[0],
+    deliveryTime: '12:00',
   });
 
   useEffect(() => {
@@ -181,12 +179,11 @@ export default function App() {
     setCart([]);
     setCustomerInfo({
       name: '',
-      email: '',
       phone: '',
       address: '',
       city: '',
-      zipCode: '',
-      country: 'Россия'
+      deliveryDate: new Date().toISOString().split('T')[0],
+      deliveryTime: '12:00',
     });
     setOrderId(null);
     setCurrentPage('home');
