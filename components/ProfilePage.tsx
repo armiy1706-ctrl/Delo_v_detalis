@@ -263,7 +263,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user }) => {
       </button>
 
       <div className="text-center pt-4">
-        <p className="text-[10px] text-white/40 font-bold uppercase tracking-[0.2em]">Bloom & Stem v1.4.0</p>
+        <p className="text-[10px] text-white/40 font-bold uppercase tracking-[0.2em]">Дело в деталях v1.4.0</p>
       </div>
     </motion.div>
   );
