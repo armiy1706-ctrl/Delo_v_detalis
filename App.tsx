@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShoppingCart, ArrowLeft, X, Heart, Search, Menu, User, Minus, Plus, Loader2 } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, X, Heart, Search, Menu, User, Minus, Plus, Loader2, Package } from 'lucide-react';
 import { ProductCard } from './components/ProductCard';
 import { ProductModal } from './components/ProductModal';
 import { CheckoutForm } from './components/CheckoutForm';
 import { OrderConfirmation } from './components/OrderConfirmation';
 import { ProfilePage } from './components/ProfilePage';
+import { AdminPanel } from './components/AdminPanel';
 import { ImageWithFallback } from './components/figma/ImageWithFallback';
 import { projectId, publicAnonKey } from './utils/supabase/info';
+
+const ADMIN_TG_ID = 566421945; // Вставьте сюда ваш ID из раздела Профиль для доступа к админке
 
 interface Product {
   id: number;
@@ -77,7 +80,7 @@ const PRODUCTS: Product[] = [
 ];
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'cart' | 'checkout' | 'confirmation' | 'profile' | 'favorites'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'cart' | 'checkout' | 'confirmation' | 'profile' | 'favorites' | 'admin'>('home');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [favorites, setFavorites] = useState<number[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -444,6 +447,17 @@ export default function App() {
           {currentPage === 'profile' && (
             <ProfilePage key="profile" user={tgUser} />
           )}
+
+          {currentPage === 'admin' && (
+            <motion.div 
+              key="admin"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+            >
+              <AdminPanel adminId={tgUser?.id || 0} />
+            </motion.div>
+          )}
         </AnimatePresence>
       </main>
 
@@ -458,7 +472,7 @@ export default function App() {
         tgUser={tgUser}
       />
 
-      {(currentPage === 'home' || currentPage === 'profile' || currentPage === 'favorites' || currentPage === 'cart') && (
+      {(currentPage === 'home' || currentPage === 'profile' || currentPage === 'favorites' || currentPage === 'cart' || currentPage === 'admin') && (
         <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-stone-100 px-4 py-3 flex justify-between items-center z-40 max-w-md mx-auto rounded-t-3xl shadow-[0_-10px_30px_rgba(0,0,0,0.1)]">
           <button 
             className={`flex flex-col items-center gap-1 flex-1 transition-all ${currentPage === 'home' ? 'text-[#D4AF37] scale-110' : 'text-stone-400'}`} 
@@ -496,6 +510,16 @@ export default function App() {
             <User className="w-6 h-6" />
             <span className="text-[10px] font-bold uppercase tracking-tighter">Профиль</span>
           </button>
+
+          {tgUser?.id === ADMIN_TG_ID && (
+            <button 
+              className={`flex flex-col items-center gap-1 flex-1 transition-all ${currentPage === 'admin' ? 'text-[#D4AF37] scale-110' : 'text-stone-400'}`}
+              onClick={() => setCurrentPage('admin')}
+            >
+              <Package className="w-6 h-6" />
+              <span className="text-[10px] font-bold uppercase tracking-tighter">Админ</span>
+            </button>
+          )}
         </nav>
       )}
     </div>
