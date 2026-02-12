@@ -16,6 +16,7 @@ interface Order {
   createdAt: string;
   total: number;
   items: any[];
+  status?: string;
 }
 
 interface ProfilePageProps {
@@ -122,8 +123,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user }) => {
                     {new Date(order.createdAt).toLocaleDateString('ru-RU')}
                   </div>
                 </div>
-                <span className="bg-amber-50 text-[#D4AF37] text-xs font-bold px-2.5 py-1 rounded-full uppercase">
-                  Завершен
+                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase ${
+                  order.status === 'Доставлено' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-[#D4AF37]'
+                }`}>
+                  {order.status || 'Завершен'}
                 </span>
               </div>
               <div className="border-t border-stone-50 pt-3 flex justify-between items-center">
