@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Calendar, Clock } from 'lucide-react';
 
@@ -19,6 +19,42 @@ interface CheckoutFormProps {
 }
 
 export const CheckoutForm: React.FC<CheckoutFormProps> = ({ customerInfo, setCustomerInfo, onNext }) => {
+  const WORKING_HOURS_START = 9;
+  const WORKING_HOURS_END = 22;
+
+  const timeSlots = useMemo(() => {
+    const slots: string[] = [];
+    const now = new Date();
+    const isToday = customerInfo.deliveryDate === now.toISOString().split('T')[0];
+    
+    let startHour = WORKING_HOURS_START;
+    
+    if (isToday) {
+      // Start at least 1 hour from now
+      const minStartHour = now.getHours() + 1;
+      startHour = Math.max(WORKING_HOURS_START, minStartHour);
+    }
+
+    for (let hour = startHour; hour < WORKING_HOURS_END; hour += 2) {
+      const endHour = Math.min(hour + 2, WORKING_HOURS_END);
+      const slotLabel = `${hour.toString().padStart(2, '0')}:00 - ${endHour.toString().padStart(2, '0')}:00`;
+      slots.push(slotLabel);
+    }
+
+    return slots;
+  }, [customerInfo.deliveryDate]);
+
+  // Ensure deliveryTime is valid when slots change
+  useEffect(() => {
+    if (timeSlots.length > 0) {
+      if (!timeSlots.includes(customerInfo.deliveryTime)) {
+        setCustomerInfo({ ...customerInfo, deliveryTime: timeSlots[0] });
+      }
+    } else if (customerInfo.deliveryTime !== '') {
+      setCustomerInfo({ ...customerInfo, deliveryTime: '' });
+    }
+  }, [timeSlots, customerInfo.deliveryDate]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setCustomerInfo({ ...customerInfo, [name]: value });
@@ -26,6 +62,10 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({ customerInfo, setCus
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!customerInfo.deliveryTime) {
+      alert("Пожалуйста, выберите доступное время доставки.");
+      return;
+    }
     onNext();
   };
 
@@ -113,14 +153,29 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({ customerInfo, setCus
                 <Clock className="w-4 h-4 text-[#D4AF37]" />
                 Время
               </label>
-              <input
-                required
-                type="time"
-                name="deliveryTime"
-                value={customerInfo.deliveryTime}
-                onChange={handleChange}
-                className="w-full px-4 py-3 rounded-xl border border-stone-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all bg-stone-50"
-              />
+              <div className="relative">
+                <select
+                  required
+                  name="deliveryTime"
+                  value={customerInfo.deliveryTime}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 rounded-xl border border-stone-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all bg-stone-50 appearance-none cursor-pointer pr-10"
+                >
+                  {timeSlots.length > 0 ? (
+                    timeSlots.map(slot => (
+                      <option key={slot} value={slot}>{slot}</option>
+                    ))
+                  ) : (
+                    <option value="">Нет слотов</option>
+                  )}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-stone-400">
+                  <Clock className="w-4 h-4" />
+                </div>
+              </div>
+              {timeSlots.length === 0 && (
+                <p className="text-[10px] text-red-500 mt-1 leading-tight font-medium">Доставка на сегодня окончена. Выберите завтрашний день.</p>
+              )}
             </div>
           </div>
         </div>
@@ -128,7 +183,8 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({ customerInfo, setCus
 
       <button
         type="submit"
-        className="w-full py-4 bg-[#D4AF37] text-white rounded-2xl font-bold shadow-xl hover:bg-[#B8860B] active:scale-[0.98] transition-all"
+        disabled={timeSlots.length === 0}
+        className="w-full py-4 bg-[#D4AF37] disabled:bg-stone-300 text-white rounded-2xl font-bold shadow-xl hover:bg-[#B8860B] active:scale-[0.98] transition-all"
       >
         Оформить заказ
       </button>
