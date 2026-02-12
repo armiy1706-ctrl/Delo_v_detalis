@@ -370,7 +370,7 @@ export default function App() {
                       </div>
                       <div className="flex-1">
                         <h4 className="font-semibold text-stone-800">{item.name}</h4>
-                        <p className="text-sm font-bold text-stone-900">{item.price.toLocaleString('ru-RU')} ₽</p>
+                        <p className="text-sm font-bold text-[#D4AF37]">{item.price.toLocaleString('ru-RU')} ₽</p>
                       </div>
                       <div className="flex items-center gap-2 bg-stone-50 p-1 rounded-xl">
                         <button onClick={() => updateQuantity(item.id, -1)} className="w-7 h-7 bg-white rounded-lg">-</button>
@@ -383,7 +383,7 @@ export default function App() {
                   <div className="bg-white p-6 rounded-3xl border border-stone-100 space-y-4 shadow-xl">
                     <div className="flex justify-between items-center">
                       <span className="text-lg font-bold">Итого</span>
-                      <span className="text-2xl font-bold text-stone-900">{total.toLocaleString('ru-RU')} ₽</span>
+                      <span className="text-2xl font-bold text-[#D4AF37]">{total.toLocaleString('ru-RU')} ₽</span>
                     </div>
                     <button 
                       onClick={() => setCurrentPage('checkout')}
