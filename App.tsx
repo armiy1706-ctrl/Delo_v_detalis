@@ -84,6 +84,7 @@ export default function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [tgUser, setTgUser] = useState<any>(null);
+  const [ratings, setRatings] = useState<Record<string, { average: number, count: number }>>({});
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     name: '',
     phone: '',
@@ -101,7 +102,6 @@ export default function App() {
       tg.expand();
       if (tg.initDataUnsafe?.user) {
         setTgUser(tg.initDataUnsafe.user);
-        // Pre-fill name and tgId
         setCustomerInfo(prev => ({
           ...prev,
           tgId: tg.initDataUnsafe.user.id,
@@ -110,16 +110,32 @@ export default function App() {
       }
     }
     
-    // Load favorites from local storage if available
+    // Load favorites from local storage
     const savedFavorites = localStorage.getItem('bloom_favorites');
     if (savedFavorites) {
       setFavorites(JSON.parse(savedFavorites));
     }
+
+    fetchRatings();
   }, []);
 
   useEffect(() => {
     localStorage.setItem('bloom_favorites', JSON.stringify(favorites));
   }, [favorites]);
+
+  const fetchRatings = async () => {
+    try {
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-c325e4cf/ratings`, {
+        headers: { 'Authorization': `Bearer ${publicAnonKey}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setRatings(data.summary);
+      }
+    } catch (err) {
+      console.error("Error fetching ratings:", err);
+    }
+  };
 
   const toggleFavorite = (product: Product) => {
     setFavorites(prev => 
@@ -252,7 +268,6 @@ export default function App() {
               exit={{ opacity: 0 }}
               className="px-4 pt-6 space-y-8"
             >
-              {/* Hero */}
               <section className="relative h-48 rounded-3xl overflow-hidden shadow-lg border border-white/20">
                 <ImageWithFallback
                   src="https://images.unsplash.com/photo-1745570647583-08120794d68d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzcHJpbmclMjBmbG9yYWwlMjBhcnJhbmdlbWVudCUyMHBhc3RlbHxlbnwxfHx8fDE3NzA2MTk4NzB8MA&ixlib=rb-4.1.0&q=80&w=1080"
@@ -265,13 +280,13 @@ export default function App() {
                 </div>
               </section>
 
-              {/* Grid */}
               <div className="grid grid-cols-2 gap-4 pb-8">
                 {PRODUCTS.map(product => (
                   <ProductCard 
                     key={product.id} 
                     product={product} 
                     isFavorite={favorites.includes(product.id)}
+                    rating={ratings[product.id.toString()]}
                     onClick={setSelectedProduct}
                     onAddToCart={(p) => addToCart(p, 1)} 
                     onToggleFavorite={toggleFavorite}
@@ -314,6 +329,7 @@ export default function App() {
                       key={product.id} 
                       product={product} 
                       isFavorite={true}
+                      rating={ratings[product.id.toString()]}
                       onClick={setSelectedProduct}
                       onAddToCart={(p) => addToCart(p, 1)} 
                       onToggleFavorite={toggleFavorite}
@@ -434,8 +450,12 @@ export default function App() {
       <ProductModal 
         product={selectedProduct}
         isOpen={!!selectedProduct}
-        onClose={() => setSelectedProduct(null)}
+        onClose={() => {
+          setSelectedProduct(null);
+          fetchRatings(); // Refresh ratings when modal closes
+        }}
         onAddToCart={addToCart}
+        tgUser={tgUser}
       />
 
       {(currentPage === 'home' || currentPage === 'profile' || currentPage === 'favorites' || currentPage === 'cart') && (
