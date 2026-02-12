@@ -10,7 +10,7 @@ import { AdminPanel } from './components/AdminPanel';
 import { ImageWithFallback } from './components/figma/ImageWithFallback';
 import { projectId, publicAnonKey } from './utils/supabase/info';
 
-const ADMIN_TG_ID = 566421945; // Вставьте сюда ваш ID из раздела Профиль для доступа к админке
+const ADMIN_TG_ID = 670020276; // Вставьте сюда ваш ID из раздела Профиль для доступа к админке
 
 interface Product {
   id: number;
