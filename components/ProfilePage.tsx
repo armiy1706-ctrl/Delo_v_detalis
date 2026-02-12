@@ -28,6 +28,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user }) => {
   const [activeSection, setActiveSection] = useState<ActiveSection>('main');
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
 
   const fetchHistory = async () => {
     if (!user?.id) return;
@@ -48,6 +49,37 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user }) => {
       setLoading(false);
     }
   };
+
+  const fetchUserPhoto = async () => {
+    if (!user?.id) return;
+    
+    // If we already have photo_url from Telegram WebApp, use it
+    if (user.photo_url) {
+      setProfilePhoto(user.photo_url);
+      return;
+    }
+
+    // Otherwise, try to fetch it via our bot-proxy route
+    try {
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-c325e4cf/user-photo?tgId=${user.id}`, {
+        headers: {
+          'Authorization': `Bearer ${publicAnonKey}`
+        }
+      });
+      const data = await response.json();
+      if (data.success && data.photoUrl) {
+        setProfilePhoto(data.photoUrl);
+      }
+    } catch (err) {
+      console.error("User photo fetch error:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserPhoto();
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     if (activeSection === 'history') {
@@ -161,11 +193,18 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ user }) => {
       className="px-4 pt-6 space-y-6 pb-12"
     >
       <div className="flex flex-col items-center text-center space-y-4">
-        <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center text-white shadow-inner overflow-hidden border-4 border-white">
-          {user?.photo_url ? (
-            <img src={user.photo_url} alt="Profile" className="w-full h-full object-cover" />
+        <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center text-white shadow-inner overflow-hidden border-4 border-white relative">
+          {profilePhoto ? (
+            <img 
+              src={profilePhoto} 
+              alt="Profile" 
+              className="w-full h-full object-cover"
+              onError={() => setProfilePhoto(null)} 
+            />
           ) : (
-            <User className="w-12 h-12" />
+            <div className="flex flex-col items-center justify-center">
+              <User className="w-12 h-12 text-white/50" />
+            </div>
           )}
         </div>
         <div>
