@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShoppingCart, ArrowLeft, X, Heart, Search, Menu, User, Minus, Plus, Loader2, Package } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, X, Heart, Search, Menu, User, Minus, Plus, Loader2, Package, Wallet, Gift } from 'lucide-react';
 import { ProductCard } from './components/ProductCard';
 import { ProductModal } from './components/ProductModal';
-import { CheckoutForm } from './components/CheckoutForm';
+import { CartPage } from './components/CartPage';
+import { MultiStepCheckout } from './components/MultiStepCheckout';
 import { OrderConfirmation } from './components/OrderConfirmation';
 import { ProfilePage } from './components/ProfilePage';
 import { AdminPanel } from './components/AdminPanel';
 import { ImageWithFallback } from './components/figma/ImageWithFallback';
 import { projectId, publicAnonKey } from './utils/supabase/info';
 
-const ADMIN_TG_ID = 670020276; // Вставьте сюда ваш ID из раздела Профиль для доступа к админке
+const ADMIN_TG_ID = 670020276;
 
 interface Product {
   id: number;
@@ -27,10 +28,17 @@ interface CartItem extends Product {
 interface CustomerInfo {
   name: string;
   phone: string;
-  address: string;
+  email: string;
   city: string;
-  deliveryDate: string;
-  deliveryTime: string;
+  address: string;
+  house: string;
+  flat: string;
+  date: string;
+  time: string;
+  comment: string;
+  isRecipient: boolean;
+  recipientName: string;
+  recipientPhone: string;
   tgId?: number;
 }
 
@@ -88,17 +96,26 @@ export default function App() {
   const [orderId, setOrderId] = useState<string | null>(null);
   const [tgUser, setTgUser] = useState<any>(null);
   const [ratings, setRatings] = useState<Record<string, { average: number, count: number }>>({});
+  const [userPoints, setUserPoints] = useState(500); // Initial mock points
+  const [usePoints, setUsePoints] = useState(false);
+  
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     name: '',
     phone: '',
+    email: '',
+    city: 'Москва',
     address: '',
-    city: '',
-    deliveryDate: new Date().toISOString().split('T')[0],
-    deliveryTime: '',
+    house: '',
+    flat: '',
+    date: new Date().toISOString().split('T')[0],
+    time: '12:00 - 14:00',
+    comment: '',
+    isRecipient: true,
+    recipientName: '',
+    recipientPhone: ''
   });
 
   useEffect(() => {
-    // Initialize Telegram WebApp
     const tg = (window as any).Telegram?.WebApp;
     if (tg) {
       tg.ready();
@@ -110,10 +127,10 @@ export default function App() {
           tgId: tg.initDataUnsafe.user.id,
           name: prev.name || `${tg.initDataUnsafe.user.first_name} ${tg.initDataUnsafe.user.last_name || ''}`.trim()
         }));
+        fetchUserPoints(tg.initDataUnsafe.user.id);
       }
     }
     
-    // Load favorites from local storage
     const savedFavorites = localStorage.getItem('bloom_favorites');
     if (savedFavorites) {
       setFavorites(JSON.parse(savedFavorites));
@@ -122,9 +139,19 @@ export default function App() {
     fetchRatings();
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('bloom_favorites', JSON.stringify(favorites));
-  }, [favorites]);
+  const fetchUserPoints = async (userId: number) => {
+    try {
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-c325e4cf/user-points/${userId}`, {
+        headers: { 'Authorization': `Bearer ${publicAnonKey}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setUserPoints(data.points);
+      }
+    } catch (err) {
+      console.error("Error fetching points:", err);
+    }
+  };
 
   const fetchRatings = async () => {
     try {
@@ -172,10 +199,14 @@ export default function App() {
     setCart(prev => prev.filter(item => item.id !== id));
   };
 
-  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const itemsTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const serviceCharge = Math.round(itemsTotal * 0.1);
+  const deliveryCost = 350;
+  const discount = usePoints ? Math.min(userPoints, itemsTotal) : 0;
+  const finalTotal = itemsTotal + serviceCharge + deliveryCost - discount;
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (info: CustomerInfo) => {
     setIsSubmitting(true);
     try {
       const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-c325e4cf/orders`, {
@@ -185,9 +216,11 @@ export default function App() {
           'Authorization': `Bearer ${publicAnonKey}`
         },
         body: JSON.stringify({
-          customer: customerInfo,
+          customer: info,
           items: cart,
-          total: total
+          total: finalTotal,
+          pointsUsed: discount,
+          pointsEarned: Math.round(itemsTotal * 0.01)
         })
       });
 
@@ -195,58 +228,42 @@ export default function App() {
       if (result.success) {
         setOrderId(result.orderId);
         setCurrentPage('confirmation');
+        // Update local points immediately
+        setUserPoints(prev => prev - discount + Math.round(itemsTotal * 0.01));
       } else {
-        console.error("Order error:", result.error);
-        alert("Произошла ошибка при оформлении заказа. Попробуйте ��ще раз.");
+        alert("Ошибка при оформлении заказа.");
       }
     } catch (err) {
-      console.error("Fetch error:", err);
       alert("Не удалось связаться с сервером.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const getDeliveryDate = () => {
-    const date = new Date();
-    date.setDate(date.getDate() + 1);
-    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
-  };
-
   const resetOrder = () => {
     setCart([]);
-    setCustomerInfo({
-      name: '',
-      phone: '',
-      address: '',
-      city: '',
-      deliveryDate: new Date().toISOString().split('T')[0],
-      deliveryTime: '',
-    });
     setOrderId(null);
+    setUsePoints(false);
     setCurrentPage('home');
   };
 
   return (
-    <div className="min-h-screen bg-[#0ABAB5] font-sans text-stone-900 pb-20">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-stone-100 px-4 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-[#0ABAB5] font-sans text-stone-900 pb-24">
+      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-stone-100 px-4 py-4 flex items-center justify-between max-w-md mx-auto rounded-b-2xl">
         <div className="flex items-center gap-3">
           <button className="p-2 -ml-2 text-stone-500 hover:text-stone-900 transition-colors">
             <Menu className="w-6 h-6" />
           </button>
-          <div 
-            className="flex items-center gap-2 cursor-pointer" 
-            onClick={() => setCurrentPage('home')}
-          >
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => setCurrentPage('home')}>
             <div className="w-8 h-8 bg-[#D4AF37] rounded-lg flex items-center justify-center text-white font-bold">D</div>
-            <span className="text-xl font-bold bg-gradient-to-r from-[#D4AF37] to-[#B8860B] bg-clip-text text-transparent serif">Дело в деталях</span>
+            <span className="text-lg font-bold bg-gradient-to-r from-[#D4AF37] to-[#B8860B] bg-clip-text text-transparent serif">Дело в деталях</span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button className="p-2 text-stone-500 hover:text-stone-900 transition-colors">
-            <Search className="w-5 h-5" />
-          </button>
+        <div className="flex items-center gap-1">
+          <div className="hidden sm:flex items-center gap-2 bg-stone-50 px-3 py-1.5 rounded-full border border-stone-100 mr-2">
+            <Gift className="w-4 h-4 text-[#D4AF37]" />
+            <span className="text-xs font-bold text-stone-600">{userPoints}</span>
+          </div>
           <button 
             onClick={() => setCurrentPage('cart')}
             className="relative p-2 text-stone-500 hover:text-stone-900 transition-colors"
@@ -261,25 +278,19 @@ export default function App() {
         </div>
       </header>
 
-      <main className="max-w-md mx-auto">
+      <main className="max-w-md mx-auto px-4 pt-6">
         <AnimatePresence mode="wait">
           {currentPage === 'home' && (
-            <motion.div 
-              key="home"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="px-4 pt-6 space-y-8"
-            >
-              <section className="relative h-48 rounded-3xl overflow-hidden shadow-lg border border-white/20">
+            <motion.div key="home" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-8">
+              <section className="relative h-48 rounded-[32px] overflow-hidden shadow-lg border border-white/20">
                 <ImageWithFallback
                   src="https://images.unsplash.com/photo-1745570647583-08120794d68d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzcHJpbmclMjBmbG9yYWwlMjBhcnJhbmdlbWVudCUyMHBhc3RlbHxlbnwxfHx8fDE3NzA2MTk4NzB8MA&ixlib=rb-4.1.0&q=80&w=1080"
                   alt="Floral background"
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6">
-                  <h1 className="text-2xl font-bold text-white mb-1 serif">Дарите Эмоции</h1>
-                  <p className="text-stone-200 text-sm">Свежие букеты с доставкой за 60 минут</p>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8">
+                  <h1 className="text-3xl font-bold text-white mb-1 serif leading-tight">Цветы как искусство</h1>
+                  <p className="text-white/80 text-sm font-medium">Доставка по городу за 60 минут</p>
                 </div>
               </section>
 
@@ -300,43 +311,21 @@ export default function App() {
           )}
 
           {currentPage === 'favorites' && (
-            <motion.div 
-              key="favorites"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="px-4 pt-6"
-            >
+            <motion.div key="favorites" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <div className="flex items-center gap-3 mb-6">
-                <button onClick={() => setCurrentPage('home')} className="p-2 hover:bg-white/20 rounded-full text-white">
-                  <ArrowLeft className="w-6 h-6" />
-                </button>
+                <button onClick={() => setCurrentPage('home')} className="p-2 bg-white/20 rounded-full text-white"><ArrowLeft className="w-6 h-6" /></button>
                 <h2 className="text-2xl font-bold text-white serif">Избранное</h2>
               </div>
-
               {favorites.length === 0 ? (
                 <div className="text-center py-20 space-y-4 bg-white/10 rounded-3xl backdrop-blur-sm border border-white/20">
                   <Heart className="w-12 h-12 text-white/50 mx-auto" />
                   <p className="text-white font-medium">Ваш список избранного пуст</p>
-                  <button 
-                    onClick={() => setCurrentPage('home')} 
-                    className="px-8 py-3 bg-[#D4AF37] text-white rounded-2xl font-bold shadow-lg"
-                  >
-                    В магазин
-                  </button>
+                  <button onClick={() => setCurrentPage('home')} className="px-8 py-3 bg-[#D4AF37] text-white rounded-2xl font-bold">В магазин</button>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-4 pb-12">
                   {PRODUCTS.filter(p => favorites.includes(p.id)).map(product => (
-                    <ProductCard 
-                      key={product.id} 
-                      product={product} 
-                      isFavorite={true}
-                      rating={ratings[product.id.toString()]}
-                      onClick={setSelectedProduct}
-                      onAddToCart={(p) => addToCart(p, 1)} 
-                      onToggleFavorite={toggleFavorite}
-                    />
+                    <ProductCard key={product.id} product={product} isFavorite={true} rating={ratings[product.id.toString()]} onClick={setSelectedProduct} onAddToCart={(p) => addToCart(p, 1)} onToggleFavorite={toggleFavorite} />
                   ))}
                 </div>
               )}
@@ -344,91 +333,31 @@ export default function App() {
           )}
 
           {currentPage === 'cart' && (
-            <motion.div 
-              key="cart"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="px-4 pt-6"
-            >
+            <motion.div key="cart" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <div className="flex items-center gap-3 mb-6">
-                <button onClick={() => setCurrentPage('home')} className="p-2 hover:bg-white/20 rounded-full text-white">
-                  <ArrowLeft className="w-6 h-6" />
-                </button>
+                <button onClick={() => setCurrentPage('home')} className="p-2 bg-white/20 rounded-full text-white"><ArrowLeft className="w-6 h-6" /></button>
                 <h2 className="text-2xl font-bold text-white serif">Корзина</h2>
               </div>
-
-              {cart.length === 0 ? (
-                <div className="text-center py-20 space-y-4 bg-white/10 rounded-3xl backdrop-blur-sm border border-white/20">
-                  <ShoppingCart className="w-12 h-12 text-white/50 mx-auto" />
-                  <p className="text-white font-medium">Ваша корзина пуста</p>
-                  <button onClick={() => setCurrentPage('home')} className="px-8 py-3 bg-[#D4AF37] text-white rounded-2xl font-bold shadow-lg">В магазин</button>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {cart.map(item => (
-                    <div key={item.id} className="flex gap-4 bg-white p-3 rounded-2xl border border-stone-100 items-center shadow-md">
-                      <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0">
-                        <ImageWithFallback src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-stone-800">{item.name}</h4>
-                        <p className="text-sm font-bold text-[#D4AF37]">{item.price.toLocaleString('ru-RU')} ₽</p>
-                      </div>
-                      <div className="flex items-center gap-2 bg-stone-50 p-1 rounded-xl">
-                        <button onClick={() => updateQuantity(item.id, -1)} className="w-7 h-7 bg-white rounded-lg">-</button>
-                        <span className="w-4 text-center font-bold text-sm">{item.quantity}</span>
-                        <button onClick={() => updateQuantity(item.id, 1)} className="w-7 h-7 bg-white rounded-lg">+</button>
-                      </div>
-                      <button onClick={() => removeFromCart(item.id)} className="p-2 text-stone-300"><X className="w-5 h-5" /></button>
-                    </div>
-                  ))}
-                  <div className="bg-white p-6 rounded-3xl border border-stone-100 space-y-4 shadow-xl">
-                    <div className="flex justify-between items-center">
-                      <span className="text-lg font-bold">Итого</span>
-                      <span className="text-2xl font-bold text-[#D4AF37]">{total.toLocaleString('ru-RU')} ₽</span>
-                    </div>
-                    <button 
-                      onClick={() => setCurrentPage('checkout')}
-                      className="w-full py-4 bg-[#D4AF37] text-white rounded-2xl font-bold shadow-lg hover:bg-[#B8860B] transition-colors"
-                    >
-                      К оформлению
-                    </button>
-                  </div>
-                </div>
-              )}
+              <CartPage 
+                items={cart} 
+                updateQuantity={updateQuantity} 
+                removeFromCart={removeFromCart} 
+                userPoints={userPoints}
+                usePoints={usePoints}
+                setUsePoints={setUsePoints}
+                onCheckout={() => setCurrentPage('checkout')}
+              />
             </motion.div>
           )}
 
           {currentPage === 'checkout' && (
-            <motion.div 
-              key="checkout"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="px-4 pt-6"
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <button onClick={() => setCurrentPage('cart')} className="p-2 hover:bg-white/20 rounded-full text-white">
-                  <ArrowLeft className="w-6 h-6" />
-                </button>
-                <h2 className="text-2xl font-bold text-white serif">Оформление</h2>
-              </div>
-
-              <CheckoutForm 
-                customerInfo={customerInfo}
-                setCustomerInfo={setCustomerInfo}
-                onNext={handleCheckout}
+            <motion.div key="checkout" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <MultiStepCheckout 
+                initialInfo={customerInfo}
+                onComplete={handleCheckout}
+                onCancel={() => setCurrentPage('cart')}
+                total={finalTotal}
               />
-              
-              {isSubmitting && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center">
-                  <div className="bg-white p-8 rounded-3xl flex flex-col items-center gap-3 shadow-2xl">
-                    <Loader2 className="w-10 h-10 text-[#D4AF37] animate-spin" />
-                    <p className="font-medium text-stone-600">Сохраняем заказ...</p>
-                  </div>
-                </div>
-              )}
             </motion.div>
           )}
 
@@ -437,87 +366,57 @@ export default function App() {
               <OrderConfirmation 
                 customerInfo={customerInfo}
                 orderNumber={orderId || "BP-000000"}
-                total={total}
-                deliveryDate={getDeliveryDate()}
+                total={finalTotal}
+                deliveryDate={customerInfo.date}
                 onReset={resetOrder}
               />
             </motion.div>
           )}
 
           {currentPage === 'profile' && (
-            <ProfilePage key="profile" user={tgUser} />
+            <ProfilePage key="profile" user={tgUser} points={userPoints} />
           )}
 
           {currentPage === 'admin' && (
-            <motion.div 
-              key="admin"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-            >
+            <motion.div key="admin" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}>
               <AdminPanel adminId={tgUser?.id || 0} />
             </motion.div>
           )}
         </AnimatePresence>
       </main>
 
-      <ProductModal 
-        product={selectedProduct}
-        isOpen={!!selectedProduct}
-        onClose={() => {
-          setSelectedProduct(null);
-          fetchRatings(); // Refresh ratings when modal closes
-        }}
-        onAddToCart={addToCart}
-        tgUser={tgUser}
-      />
+      <ProductModal product={selectedProduct} isOpen={!!selectedProduct} onClose={() => { setSelectedProduct(null); fetchRatings(); }} onAddToCart={addToCart} tgUser={tgUser} />
 
-      {(currentPage === 'home' || currentPage === 'profile' || currentPage === 'favorites' || currentPage === 'cart' || currentPage === 'admin') && (
-        <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-stone-100 px-4 py-3 flex justify-between items-center z-40 max-w-md mx-auto rounded-t-3xl shadow-[0_-10px_30px_rgba(0,0,0,0.1)]">
-          <button 
-            className={`flex flex-col items-center gap-1 flex-1 transition-all ${currentPage === 'home' ? 'text-[#D4AF37] scale-110' : 'text-stone-400'}`} 
-            onClick={() => setCurrentPage('home')}
-          >
+      {isSubmitting && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center">
+          <div className="bg-white p-8 rounded-[40px] flex flex-col items-center gap-4 shadow-2xl">
+            <div className="w-16 h-16 bg-[#0ABAB5]/10 rounded-full flex items-center justify-center">
+              <Loader2 className="w-8 h-8 text-[#0ABAB5] animate-spin" />
+            </div>
+            <p className="font-bold text-stone-800 text-lg serif">Создаем ваш заказ...</p>
+          </div>
+        </div>
+      )}
+
+      {currentPage !== 'checkout' && (
+        <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-stone-100 px-6 py-3 flex justify-between items-center z-40 max-w-md mx-auto rounded-t-[32px] shadow-[0_-10px_30px_rgba(0,0,0,0.1)]">
+          <button className={`flex flex-col items-center gap-1 transition-all ${currentPage === 'home' ? 'text-[#0ABAB5] scale-110' : 'text-stone-300'}`} onClick={() => setCurrentPage('home')}>
             <Search className="w-6 h-6" />
-            <span className="text-[10px] font-bold uppercase tracking-tighter">Магазин</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest">Бутики</span>
           </button>
-          
-          <button 
-            className={`flex flex-col items-center gap-1 flex-1 transition-all ${currentPage === 'favorites' ? 'text-[#D4AF37] scale-110' : 'text-stone-400'}`} 
-            onClick={() => setCurrentPage('favorites')}
-          >
-            <Heart className={`w-6 h-6 ${currentPage === 'favorites' ? 'fill-current' : ''}`} />
-            <span className="text-[10px] font-bold uppercase tracking-tighter">Избранное</span>
-          </button>
-
-          <button 
-            className={`flex flex-col items-center gap-1 flex-1 relative transition-all ${currentPage === 'cart' ? 'text-[#D4AF37] scale-110' : 'text-stone-400'}`}
-            onClick={() => setCurrentPage('cart')}
-          >
+          <button className={`flex flex-col items-center gap-1 relative transition-all ${currentPage === 'cart' ? 'text-[#0ABAB5] scale-110' : 'text-stone-300'}`} onClick={() => setCurrentPage('cart')}>
             <ShoppingCart className="w-6 h-6" />
-            <span className="text-[10px] font-bold uppercase tracking-tighter">Корзина</span>
-            {cartCount > 0 && (
-              <span className="absolute top-0 right-1/4 w-4 h-4 bg-[#D4AF37] text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
-                {cartCount}
-              </span>
-            )}
+            <span className="text-[10px] font-bold uppercase tracking-widest">Корзина</span>
+            {cartCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#D4AF37] text-white text-[10px] font-bold rounded-full flex items-center justify-center">{cartCount}</span>}
           </button>
-
-          <button 
-            className={`flex flex-col items-center gap-1 flex-1 transition-all ${currentPage === 'profile' ? 'text-[#D4AF37] scale-110' : 'text-stone-400'}`}
-            onClick={() => setCurrentPage('profile')}
-          >
+          <button className={`flex flex-col items-center gap-1 transition-all ${currentPage === 'profile' ? 'text-[#0ABAB5] scale-110' : 'text-stone-300'}`} onClick={() => setCurrentPage('profile')}>
             <User className="w-6 h-6" />
-            <span className="text-[10px] font-bold uppercase tracking-tighter">Профиль</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest">Профиль</span>
           </button>
-
           {tgUser?.id === ADMIN_TG_ID && (
-            <button 
-              className={`flex flex-col items-center gap-1 flex-1 transition-all ${currentPage === 'admin' ? 'text-[#D4AF37] scale-110' : 'text-stone-400'}`}
-              onClick={() => setCurrentPage('admin')}
-            >
+            <button className={`flex flex-col items-center gap-1 transition-all ${currentPage === 'admin' ? 'text-[#0ABAB5] scale-110' : 'text-stone-300'}`} onClick={() => setCurrentPage('admin')}>
               <Package className="w-6 h-6" />
-              <span className="text-[10px] font-bold uppercase tracking-tighter">Админ</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest">Админ</span>
             </button>
           )}
         </nav>
