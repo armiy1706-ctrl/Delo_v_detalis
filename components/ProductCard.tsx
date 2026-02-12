@@ -62,13 +62,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <h3 className="text-base font-bold text-stone-800 mb-1 line-clamp-1 serif">{product.name}</h3>
         <p className="text-[11px] text-stone-400 mb-3 line-clamp-1 leading-relaxed">{product.description}</p>
         <div className="flex items-center justify-between mt-auto">
-          <span className="text-lg font-bold text-stone-900">{product.price.toLocaleString('ru-RU')} ₽</span>
+          <span className="text-lg font-bold text-[#D4AF37]">{product.price.toLocaleString('ru-RU')} ₽</span>
           <button 
             onClick={(e) => {
               e.stopPropagation();
               onAddToCart(product);
             }}
-            className="w-9 h-9 flex items-center justify-center bg-[#D4AF37] text-white rounded-xl shadow-lg shadow-[#D4AF37]/20 hover:bg-[#B8860B] transition-colors"
+            className="w-9 h-9 flex items-center justify-center bg-[#D4AF37] text-white rounded-xl shadow-lg shadow-amber-100 hover:bg-[#B8860B] transition-colors"
           >
             <Plus className="w-5 h-5" strokeWidth={3} />
           </button>
