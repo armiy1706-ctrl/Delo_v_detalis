@@ -91,7 +91,7 @@ export default function App() {
     address: '',
     city: '',
     deliveryDate: new Date().toISOString().split('T')[0],
-    deliveryTime: '12:00',
+    deliveryTime: '',
   });
 
   useEffect(() => {
@@ -194,7 +194,7 @@ export default function App() {
         setCurrentPage('confirmation');
       } else {
         console.error("Order error:", result.error);
-        alert("Произошла ошибка при оформлении заказа. Попробуйте еще раз.");
+        alert("Произошла ошибка при оформлении заказа. Попробуйте ��ще раз.");
       }
     } catch (err) {
       console.error("Fetch error:", err);
@@ -218,7 +218,7 @@ export default function App() {
       address: '',
       city: '',
       deliveryDate: new Date().toISOString().split('T')[0],
-      deliveryTime: '12:00',
+      deliveryTime: '',
     });
     setOrderId(null);
     setCurrentPage('home');
