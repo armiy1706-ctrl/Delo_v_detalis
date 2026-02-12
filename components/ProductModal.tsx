@@ -155,7 +155,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, isOpen, onC
                     </div>
                     <div className="flex flex-col items-end">
                       <span className="text-sm text-stone-400 uppercase font-bold tracking-wider">Цена</span>
-                      <span className="text-2xl font-bold text-stone-900">{product.price.toLocaleString('ru-RU')} ₽</span>
+                      <span className="text-2xl font-bold text-[#D4AF37]">{product.price.toLocaleString('ru-RU')} ₽</span>
                     </div>
                   </div>
                   <p className="text-stone-500 leading-relaxed">{product.description}</p>
