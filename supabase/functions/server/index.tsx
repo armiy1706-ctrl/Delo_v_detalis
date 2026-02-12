@@ -26,6 +26,20 @@ app.get("/make-server-c325e4cf/health", (c) => {
 });
 
 /**
+ * Get user points
+ */
+app.get("/make-server-c325e4cf/user-points/:tgId", async (c) => {
+  try {
+    const tgId = c.req.param('tgId');
+    const pointsKey = `points:${tgId}`;
+    const points = await kv.get(pointsKey);
+    return c.json({ success: true, points: points !== null ? points : 500 }); // Default 500 for new users
+  } catch (error) {
+    return c.json({ success: false, error: "Failed to fetch points" }, 500);
+  }
+});
+
+/**
  * Create a new order
  */
 app.post("/make-server-c325e4cf/orders", async (c) => {
@@ -42,23 +56,34 @@ app.post("/make-server-c325e4cf/orders", async (c) => {
     // Save to KV store
     await kv.set(orderId, fullOrder);
 
-    // Save to user history if tgId is present
+    // Handle points and history
     const tgId = orderData.customer?.tgId;
     if (tgId) {
+      // History
       const historyKey = `history:${tgId}`;
       const history = await kv.get(historyKey) || [];
       await kv.set(historyKey, [...history, orderId]);
+
+      // Points Logic
+      const pointsKey = `points:${tgId}`;
+      const currentPoints = await kv.get(pointsKey) !== null ? await kv.get(pointsKey) : 500;
+      const pointsUsed = orderData.pointsUsed || 0;
+      const pointsEarned = orderData.pointsEarned || 0;
+      const newPoints = Math.max(0, currentPoints - pointsUsed + pointsEarned);
+      await kv.set(pointsKey, newPoints);
 
       // Send Telegram notification
       const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
       if (botToken) {
         const text = `🌸 *Новый заказ!* \n\n` +
-                     `📦 *ID:* ${orderId}\n` +
+                     `📦 *ID:* ${orderId.split('-')[0].replace('order:', '')}\n` +
                      `👤 *Клиент:* ${orderData.customer.name}\n` +
                      `📞 *Тел:* ${orderData.customer.phone}\n` +
-                     `📍 *Адрес:* ${orderData.customer.city}, ${orderData.customer.address}\n` +
-                     `⏰ *Доставка:* ${orderData.customer.deliveryDate} в ${orderData.customer.deliveryTime}\n` +
-                     `💰 *Сумма:* ${orderData.total} ₽\n\n` +
+                     `📍 *Адрес:* ${orderData.customer.city}, ${orderData.customer.address}, д. ${orderData.customer.house}, кв. ${orderData.customer.flat}\n` +
+                     `⏰ *Доставка:* ${orderData.customer.date} в ${orderData.customer.time}\n` +
+                     `💰 *Сумма:* ${orderData.total} ₽\n` +
+                     (pointsUsed > 0 ? `🎁 *Списано баллов:* ${pointsUsed}\n` : '') +
+                     `✨ *Начислено баллов:* ${pointsEarned}\n\n` +
                      `Букеты:\n${orderData.items.map((i: any) => `- ${i.name} (${i.quantity} шт)`).join('\n')}`;
         
         try {
@@ -77,7 +102,6 @@ app.post("/make-server-c325e4cf/orders", async (c) => {
       }
     }
 
-    console.log(`Order created: ${orderId}`);
     return c.json({ success: true, orderId });
   } catch (error) {
     console.error(`Error creating order: ${error}`);
@@ -188,12 +212,10 @@ app.get("/make-server-c325e4cf/user-photo", async (c) => {
     
     if (!tgId || !botToken) return c.json({ success: false, error: "Missing tgId or token" }, 400);
 
-    // Try to get from cache first
     const cacheKey = `photo:${tgId}`;
     const cachedUrl = await kv.get(cacheKey);
     if (cachedUrl) return c.json({ success: true, photoUrl: cachedUrl });
 
-    // Fetch from Telegram
     const photosRes = await fetch(`https://api.telegram.org/bot${botToken}/getUserProfilePhotos?user_id=${tgId}&limit=1`);
     const photosData = await photosRes.json();
 
@@ -205,8 +227,6 @@ app.get("/make-server-c325e4cf/user-photo", async (c) => {
       if (fileData.ok) {
         const filePath = fileData.result.file_path;
         const photoUrl = `https://api.telegram.org/file/bot${botToken}/${filePath}`;
-        
-        // Cache for 24 hours (approx, kv.set doesn't have TTL usually in our util, but good to store)
         await kv.set(cacheKey, photoUrl);
         return c.json({ success: true, photoUrl });
       }
@@ -225,13 +245,10 @@ app.get("/make-server-c325e4cf/user-photo", async (c) => {
 app.get("/make-server-c325e4cf/admin/orders", async (c) => {
   try {
     const adminId = c.req.query('adminId');
-    // For production, you should verify this ID properly
     if (!adminId) return c.json({ success: false, error: "Unauthorized" }, 401);
-
     const allData = await kv.getByPrefix("order:");
     return c.json({ success: true, orders: allData.reverse() });
   } catch (error) {
-    console.error(`Error fetching all orders: ${error}`);
     return c.json({ success: false, error: "Failed to fetch orders" }, 500);
   }
 });
@@ -243,7 +260,6 @@ app.post("/make-server-c325e4cf/admin/orders/:id/status", async (c) => {
   try {
     const id = c.req.param('id');
     const { status, adminId } = await c.req.json();
-    
     if (!adminId) return c.json({ success: false, error: "Unauthorized" }, 401);
 
     const order = await kv.get(id);
@@ -252,43 +268,26 @@ app.post("/make-server-c325e4cf/admin/orders/:id/status", async (c) => {
     const oldStatus = order.status;
     order.status = status;
     order.updatedAt = new Date().toISOString();
-    
     await kv.set(id, order);
 
-    // Notify user
     const tgId = order.customer?.tgId;
     const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
     
     if (tgId && botToken && oldStatus !== status) {
-      let statusEmoji = "📦";
-      if (status === "Собираем заказ") statusEmoji = "✨";
-      if (status === "Заказ собран") statusEmoji = "✅";
-      if (status === "Доставляем заказ") statusEmoji = "🚚";
-      if (status === "Доставлено") statusEmoji = "🌸";
-
-      const text = `${statusEmoji} *Обновление статуса заказа!*\n\n` +
+      const text = `🌸 *Обновление статуса заказа!*\n\n` +
                    `Заказ *${id.split('-')[0].replace('order:', '')}*\n` +
                    `Новый статус: *${status}*\n\n` +
-                   `Спасибо, что выбрали «Дело в деталях»!`;
-      
+                   `Спасибо, что выбрали нас!`;
       try {
         await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: tgId,
-            text,
-            parse_mode: 'Markdown'
-          })
+          body: JSON.stringify({ chat_id: tgId, text, parse_mode: 'Markdown' })
         });
-      } catch (tgError) {
-        console.error(`Status notification failed: ${tgError}`);
-      }
+      } catch (tgError) {}
     }
-
     return c.json({ success: true, order });
   } catch (error) {
-    console.error(`Error updating status: ${error}`);
     return c.json({ success: false, error: "Failed to update status" }, 500);
   }
 });
