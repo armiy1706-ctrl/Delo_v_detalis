@@ -110,15 +110,70 @@ app.get("/make-server-c325e4cf/history", async (c) => {
 });
 
 /**
- * Get all orders (using prefix)
+ * Submit a review
  */
-app.get("/make-server-c325e4cf/orders", async (c) => {
+app.post("/make-server-c325e4cf/reviews", async (c) => {
   try {
-    const orders = await kv.getByPrefix("order:");
-    return c.json({ success: true, orders });
+    const { productId, rating, text, userName } = await c.req.json();
+    if (!productId || !rating) return c.json({ success: false, error: "Invalid data" }, 400);
+
+    const reviewId = `review:${productId}:${Date.now()}`;
+    const review = {
+      productId,
+      rating,
+      text,
+      userName: userName || "Аноним",
+      createdAt: new Date().toISOString()
+    };
+
+    await kv.set(reviewId, review);
+    return c.json({ success: true, review });
   } catch (error) {
-    console.error(`Error fetching orders: ${error}`);
-    return c.json({ success: false, error: "Failed to fetch orders" }, 500);
+    console.error(`Error submitting review: ${error}`);
+    return c.json({ success: false, error: "Failed to submit review" }, 500);
+  }
+});
+
+/**
+ * Get reviews for a product
+ */
+app.get("/make-server-c325e4cf/reviews/:productId", async (c) => {
+  try {
+    const productId = c.req.param('productId');
+    const reviews = await kv.getByPrefix(`review:${productId}:`);
+    return c.json({ success: true, reviews: reviews.reverse() });
+  } catch (error) {
+    console.error(`Error fetching reviews: ${error}`);
+    return c.json({ success: false, error: "Failed to fetch reviews" }, 500);
+  }
+});
+
+/**
+ * Get ratings summary for all products
+ */
+app.get("/make-server-c325e4cf/ratings", async (c) => {
+  try {
+    const allReviews = await kv.getByPrefix("review:");
+    const summary: Record<string, { average: number, count: number }> = {};
+
+    allReviews.forEach((review: any) => {
+      const pid = review.productId;
+      if (!summary[pid]) {
+        summary[pid] = { totalRating: 0, count: 0, average: 0 };
+      }
+      (summary[pid] as any).totalRating += review.rating;
+      summary[pid].count += 1;
+    });
+
+    Object.keys(summary).forEach(pid => {
+      summary[pid].average = Number(((summary[pid] as any).totalRating / summary[pid].count).toFixed(1));
+      delete (summary[pid] as any).totalRating;
+    });
+
+    return c.json({ success: true, summary });
+  } catch (error) {
+    console.error(`Error fetching ratings: ${error}`);
+    return c.json({ success: false, error: "Failed to fetch ratings" }, 500);
   }
 });
 
