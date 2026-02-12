@@ -35,6 +35,7 @@ app.post("/make-server-c325e4cf/orders", async (c) => {
     const fullOrder = {
       ...orderData,
       id: orderId,
+      status: "Принят",
       createdAt: new Date().toISOString()
     };
     
@@ -215,6 +216,80 @@ app.get("/make-server-c325e4cf/user-photo", async (c) => {
   } catch (error) {
     console.error(`Error fetching user photo: ${error}`);
     return c.json({ success: false, error: "Failed to fetch photo" }, 500);
+  }
+});
+
+/**
+ * Admin: Get all orders
+ */
+app.get("/make-server-c325e4cf/admin/orders", async (c) => {
+  try {
+    const adminId = c.req.query('adminId');
+    // For production, you should verify this ID properly
+    if (!adminId) return c.json({ success: false, error: "Unauthorized" }, 401);
+
+    const allData = await kv.getByPrefix("order:");
+    return c.json({ success: true, orders: allData.reverse() });
+  } catch (error) {
+    console.error(`Error fetching all orders: ${error}`);
+    return c.json({ success: false, error: "Failed to fetch orders" }, 500);
+  }
+});
+
+/**
+ * Admin: Update order status
+ */
+app.post("/make-server-c325e4cf/admin/orders/:id/status", async (c) => {
+  try {
+    const id = c.req.param('id');
+    const { status, adminId } = await c.req.json();
+    
+    if (!adminId) return c.json({ success: false, error: "Unauthorized" }, 401);
+
+    const order = await kv.get(id);
+    if (!order) return c.json({ success: false, error: "Order not found" }, 404);
+
+    const oldStatus = order.status;
+    order.status = status;
+    order.updatedAt = new Date().toISOString();
+    
+    await kv.set(id, order);
+
+    // Notify user
+    const tgId = order.customer?.tgId;
+    const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
+    
+    if (tgId && botToken && oldStatus !== status) {
+      let statusEmoji = "📦";
+      if (status === "Собираем заказ") statusEmoji = "✨";
+      if (status === "Заказ собран") statusEmoji = "✅";
+      if (status === "Доставляем заказ") statusEmoji = "🚚";
+      if (status === "Доставлено") statusEmoji = "🌸";
+
+      const text = `${statusEmoji} *Обновление статуса заказа!*\n\n` +
+                   `Заказ *${id.split('-')[0].replace('order:', '')}*\n` +
+                   `Новый статус: *${status}*\n\n` +
+                   `Спасибо, что выбрали «Дело в деталях»!`;
+      
+      try {
+        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: tgId,
+            text,
+            parse_mode: 'Markdown'
+          })
+        });
+      } catch (tgError) {
+        console.error(`Status notification failed: ${tgError}`);
+      }
+    }
+
+    return c.json({ success: true, order });
+  } catch (error) {
+    console.error(`Error updating status: ${error}`);
+    return c.json({ success: false, error: "Failed to update status" }, 500);
   }
 });
 
