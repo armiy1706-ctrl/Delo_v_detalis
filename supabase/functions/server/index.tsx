@@ -177,4 +177,45 @@ app.get("/make-server-c325e4cf/ratings", async (c) => {
   }
 });
 
+/**
+ * Get user photo via Telegram Bot API
+ */
+app.get("/make-server-c325e4cf/user-photo", async (c) => {
+  try {
+    const tgId = c.req.query('tgId');
+    const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
+    
+    if (!tgId || !botToken) return c.json({ success: false, error: "Missing tgId or token" }, 400);
+
+    // Try to get from cache first
+    const cacheKey = `photo:${tgId}`;
+    const cachedUrl = await kv.get(cacheKey);
+    if (cachedUrl) return c.json({ success: true, photoUrl: cachedUrl });
+
+    // Fetch from Telegram
+    const photosRes = await fetch(`https://api.telegram.org/bot${botToken}/getUserProfilePhotos?user_id=${tgId}&limit=1`);
+    const photosData = await photosRes.json();
+
+    if (photosData.ok && photosData.result.total_count > 0) {
+      const fileId = photosData.result.photos[0][0].file_id;
+      const fileRes = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`);
+      const fileData = await fileRes.json();
+
+      if (fileData.ok) {
+        const filePath = fileData.result.file_path;
+        const photoUrl = `https://api.telegram.org/file/bot${botToken}/${filePath}`;
+        
+        // Cache for 24 hours (approx, kv.set doesn't have TTL usually in our util, but good to store)
+        await kv.set(cacheKey, photoUrl);
+        return c.json({ success: true, photoUrl });
+      }
+    }
+    
+    return c.json({ success: false, error: "No photo found" });
+  } catch (error) {
+    console.error(`Error fetching user photo: ${error}`);
+    return c.json({ success: false, error: "Failed to fetch photo" }, 500);
+  }
+});
+
 Deno.serve(app.fetch);
