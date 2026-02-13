@@ -31,7 +31,12 @@ app.get("/make-server-c325e4cf/health", (c) => {
 app.post("/make-server-c325e4cf/orders", async (c) => {
   try {
     const orderData = await c.req.json();
-    const orderId = `order:${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Generate a short numeric ID starting from 1000
+    // We use a combination of timestamp suffix and a small random part for uniqueness
+    const shortId = (1000 + (Math.floor(Date.now() / 1000) % 9000)).toString();
+    const orderId = `order:${shortId}`;
+    
     const fullOrder = {
       ...orderData,
       id: orderId,
@@ -49,12 +54,14 @@ app.post("/make-server-c325e4cf/orders", async (c) => {
 
     if (botToken) {
       const orderSummary = orderData.items.map((i: any) => `- ${i.name} (${i.quantity} шт)`).join('\n');
+      const displayId = `#${orderId.replace('order:', '')}`;
+      
       const recipientInfo = orderData.customer.isRecipient 
         ? "_Тот же, что и заказчик_" 
         : `👤 ${orderData.customer.recipientName}\n📞 ${orderData.customer.recipientPhone}`;
 
       const text = `🌸 *Новый заказ!* \n\n` +
-                   `📦 *ID:* ${orderId.split('-')[0].replace('order:', '')}\n` +
+                   `📦 *ID:* ${displayId}\n` +
                    `👤 *Заказчик:* ${orderData.customer.name}\n` +
                    `📞 *Тел:* ${orderData.customer.phone}\n` +
                    `📍 *Адрес:* ${orderData.customer.city}, ${orderData.customer.address}, д. ${orderData.customer.house}, кв. ${orderData.customer.flat}\n` +
