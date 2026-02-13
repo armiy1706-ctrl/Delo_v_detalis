@@ -104,7 +104,7 @@ export const CartPage: React.FC<CartPageProps> = ({
 
         <button 
           onClick={onCheckout}
-          className="w-full py-4 bg-stone-800 text-white rounded-[20px] font-bold text-lg shadow-xl hover:bg-black active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+          className="w-full py-4 bg-[#D4AF37] text-white rounded-[20px] font-bold text-lg shadow-xl shadow-amber-100 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
         >
           Перейти к оформлению
           <ChevronRight className="w-5 h-5" />
