@@ -1,133 +1,159 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { CheckCircle, Calendar, MapPin, Phone, User, Home, MessageSquare } from 'lucide-react';
-
-interface CustomerInfo {
-  name: string;
-  phone: string;
-  email: string;
-  city: string;
-  address: string;
-  house: string;
-  flat: string;
-  date: string;
-  time: string;
-  comment: string;
-  isRecipient: boolean;
-  recipientName: string;
-  recipientPhone: string;
-  tgId?: number;
-}
+import { CheckCircle2, Package, MapPin, Calendar, Clock, User, Phone, Wallet, ArrowLeft } from 'lucide-react';
 
 interface OrderConfirmationProps {
-  customerInfo: CustomerInfo;
+  customerInfo: {
+    name: string;
+    phone: string;
+    city: string;
+    address: string;
+    house: string;
+    flat: string;
+    date: string;
+    time: string;
+    isRecipient: boolean;
+    recipientName: string;
+    recipientPhone: string;
+  };
   orderNumber: string;
   total: number;
   deliveryDate: string;
   onReset: () => void;
+  cartItems?: any[];
 }
 
 export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ 
   customerInfo, 
   orderNumber, 
-  total,
-  onReset 
+  total, 
+  onReset,
+  cartItems = []
 }) => {
+  const shortOrderNumber = orderNumber.split('-')[0].replace('order:', '');
+
   return (
-    <div className="max-w-md mx-auto py-8 px-4 pb-20">
-      <motion.div 
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="text-center mb-8"
-      >
-        <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 rounded-full mb-4 backdrop-blur-sm border border-white/30">
-          <CheckCircle className="w-10 h-10 text-white" />
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="space-y-6 pb-12"
+    >
+      {/* Success Header */}
+      <div className="bg-white rounded-[40px] p-8 text-center shadow-2xl border border-stone-100 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-2 bg-[#0ABAB5]" />
+        <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6">
+          <CheckCircle2 className="w-10 h-10 text-green-500" />
         </div>
-        <h1 className="text-3xl font-bold text-white mb-2 serif">Заказ принят!</h1>
-        <p className="text-white/80">Спасибо за ваш заказ, {customerInfo.name.split(' ')[0]}!</p>
-        <div className="mt-4 inline-block px-4 py-1.5 bg-[#D4AF37] rounded-full text-sm font-bold text-white shadow-lg border border-white/20">
-          № {orderNumber.includes(':') ? orderNumber.split(':')[1].split('-')[0] : orderNumber}
-        </div>
-      </motion.div>
+        <h2 className="text-2xl font-bold text-stone-800 serif mb-2">
+          Привет, {customerInfo.name.split(' ')[0]}!
+        </h2>
+        <p className="text-stone-500 font-medium">Ура, ваш заказ № {shortOrderNumber}</p>
+      </div>
 
-      <motion.div 
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="bg-white rounded-[32px] p-6 shadow-2xl border border-stone-100 space-y-6"
-      >
-        <div className="space-y-4">
-          <h3 className="font-bold text-lg text-stone-800 border-b border-stone-100 pb-2 serif flex items-center gap-2">
-            <Home className="w-5 h-5 text-[#D4AF37]" />
-            Детали доставки
-          </h3>
-          
+      {/* Order Details Card */}
+      <div className="bg-white rounded-[32px] overflow-hidden shadow-xl border border-stone-100">
+        <div className="p-6 space-y-6">
+          {/* Items */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-[#D4AF37]">
+              <Package className="w-4 h-4" />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Состав заказа</span>
+            </div>
+            <div className="space-y-2">
+              {cartItems.map((item, idx) => (
+                <div key={idx} className="flex justify-between items-center bg-stone-50 p-3 rounded-xl border border-stone-100">
+                  <span className="text-sm font-bold text-stone-700">{item.name}</span>
+                  <span className="text-sm font-bold text-[#D4AF37]">x{item.quantity}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Delivery Info */}
           <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <Calendar className="w-5 h-5 text-[#D4AF37] mt-1 shrink-0" />
-              <div>
-                <p className="text-[10px] text-stone-400 uppercase font-bold tracking-widest">Когда</p>
-                <p className="text-stone-700 font-bold leading-tight">
-                  {new Date(customerInfo.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
-                  <span className="text-stone-400 font-medium ml-1">в {customerInfo.time}</span>
-                </p>
-              </div>
-            </div>
+             <div className="flex gap-4">
+               <div className="w-10 h-10 bg-stone-50 rounded-xl flex items-center justify-center shrink-0 border border-stone-100">
+                 <MapPin className="w-5 h-5 text-stone-400" />
+               </div>
+               <div>
+                 <p className="text-[10px] font-bold text-stone-300 uppercase tracking-widest">Адрес доставки</p>
+                 <p className="text-sm font-bold text-stone-700">
+                   {customerInfo.address}, д. {customerInfo.house}, кв. {customerInfo.flat}
+                 </p>
+               </div>
+             </div>
 
-            <div className="flex items-start gap-3">
-              <MapPin className="w-5 h-5 text-[#D4AF37] mt-1 shrink-0" />
-              <div>
-                <p className="text-[10px] text-stone-400 uppercase font-bold tracking-widest">Куда</p>
-                <p className="text-stone-700 font-bold leading-tight">
-                  {customerInfo.city}, {customerInfo.address}, д. {customerInfo.house}
-                  {customerInfo.flat && `, кв. ${customerInfo.flat}`}
-                </p>
-              </div>
-            </div>
+             <div className="flex gap-4">
+               <div className="w-10 h-10 bg-stone-50 rounded-xl flex items-center justify-center shrink-0 border border-stone-100">
+                 <Calendar className="w-5 h-5 text-stone-400" />
+               </div>
+               <div>
+                 <p className="text-[10px] font-bold text-stone-300 uppercase tracking-widest">Дата доставки</p>
+                 <p className="text-sm font-bold text-stone-700">{customerInfo.date.split('-').reverse().join('.')}</p>
+               </div>
+             </div>
 
-            <div className="flex items-start gap-3">
-              <User className="w-5 h-5 text-[#D4AF37] mt-1 shrink-0" />
-              <div className="flex-1">
-                <p className="text-[10px] text-stone-400 uppercase font-bold tracking-widest">Получатель</p>
-                <p className="text-stone-700 font-bold leading-tight">
-                  {customerInfo.isRecipient ? customerInfo.name : customerInfo.recipientName}
-                </p>
-                <p className="text-stone-500 text-sm font-medium">
-                  {customerInfo.isRecipient ? customerInfo.phone : customerInfo.recipientPhone}
-                </p>
-              </div>
-            </div>
+             <div className="flex gap-4">
+               <div className="w-10 h-10 bg-stone-50 rounded-xl flex items-center justify-center shrink-0 border border-stone-100">
+                 <Clock className="w-5 h-5 text-stone-400" />
+               </div>
+               <div>
+                 <p className="text-[10px] font-bold text-stone-300 uppercase tracking-widest">Время доставки</p>
+                 <p className="text-sm font-bold text-stone-700">{customerInfo.time}</p>
+               </div>
+             </div>
 
-            {customerInfo.comment && (
-              <div className="flex items-start gap-3 p-3 bg-stone-50 rounded-2xl border border-stone-100">
-                <MessageSquare className="w-4 h-4 text-stone-400 mt-0.5 shrink-0" />
-                <p className="text-sm text-stone-600 italic">"{customerInfo.comment}"</p>
-              </div>
-            )}
+             <div className="flex gap-4">
+               <div className="w-10 h-10 bg-stone-50 rounded-xl flex items-center justify-center shrink-0 border border-stone-100">
+                 <User className="w-5 h-5 text-stone-400" />
+               </div>
+               <div>
+                 <p className="text-[10px] font-bold text-stone-300 uppercase tracking-widest">Получатель</p>
+                 <p className="text-sm font-bold text-stone-700">
+                   {customerInfo.isRecipient ? customerInfo.name : customerInfo.recipientName}
+                 </p>
+               </div>
+             </div>
+
+             {!customerInfo.isRecipient && (
+               <div className="flex gap-4">
+                 <div className="w-10 h-10 bg-stone-50 rounded-xl flex items-center justify-center shrink-0 border border-stone-100">
+                   <Phone className="w-5 h-5 text-stone-400" />
+                 </div>
+                 <div>
+                   <p className="text-[10px] font-bold text-stone-300 uppercase tracking-widest">Телефон получателя</p>
+                   <p className="text-sm font-bold text-stone-700">{customerInfo.recipientPhone}</p>
+                 </div>
+               </div>
+             )}
+          </div>
+
+          {/* Sum */}
+          <div className="pt-6 border-t border-stone-100 flex items-center justify-between">
+            <span className="text-lg font-bold text-stone-800 serif">Сумма заказа:</span>
+            <span className="text-2xl font-bold text-[#0ABAB5]">{total.toLocaleString('ru-RU')} ₽</span>
           </div>
         </div>
 
-        <div className="bg-[#D4AF37]/5 rounded-[24px] p-5 flex justify-between items-center border border-[#D4AF37]/10">
-          <span className="font-bold text-stone-600">К оплате</span>
-          <span className="text-2xl font-bold text-[#D4AF37]">{total.toLocaleString('ru-RU')} ₽</span>
+        {/* Action Button */}
+        <div className="p-6 bg-stone-50 border-t border-stone-100">
+          <button 
+            className="w-full py-5 bg-[#D4AF37] text-white rounded-2xl font-bold text-lg shadow-xl shadow-amber-100 flex items-center justify-center gap-3 active:scale-[0.98] transition-all"
+          >
+            <Wallet className="w-6 h-6" />
+            Перейти к оплате
+          </button>
         </div>
-
-        <button 
-          onClick={onReset}
-          className="w-full py-4 bg-stone-800 text-white rounded-[20px] font-bold text-lg shadow-xl hover:bg-black transition-all flex items-center justify-center gap-2"
-        >
-          Вернуться в магазин
-        </button>
-      </motion.div>
-
-      <div className="mt-8 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 flex items-center gap-3">
-        <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-          <CheckCircle className="w-5 h-5 text-white" />
-        </div>
-        <p className="text-xs text-white/90 font-medium leading-relaxed">
-          Статус заказа будет обновляться в вашем Telegram боте в режиме реального времени.
-        </p>
       </div>
-    </div>
+
+      {/* Back to Catalog */}
+      <button 
+        onClick={onReset}
+        className="w-full py-4 flex items-center justify-center gap-2 text-white font-bold hover:text-stone-100 transition-colors"
+      >
+        <ArrowLeft className="w-5 h-5" />
+        Вернуться в каталог
+      </button>
+    </motion.div>
   );
 };
