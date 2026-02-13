@@ -30,8 +30,6 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
   onReset,
   cartItems = []
 }) => {
-  const shortOrderNumber = orderNumber.split('-')[0].replace('order:', '');
-
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.9 }}
@@ -47,7 +45,7 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
         <h2 className="text-2xl font-bold text-stone-800 serif mb-2">
           Привет, {customerInfo.name.split(' ')[0]}!
         </h2>
-        <p className="text-stone-500 font-medium">Ура, ваш заказ № {shortOrderNumber}</p>
+        <p className="text-stone-500 font-medium">Ура, ваш заказ {orderNumber}</p>
       </div>
 
       {/* Order Details Card */}
