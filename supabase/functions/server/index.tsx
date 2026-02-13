@@ -61,13 +61,13 @@ app.post("/make-server-c325e4cf/orders", async (c) => {
         : `${orderData.customer.recipientName} (${orderData.customer.recipientPhone})`;
 
       // 1. Message for the CUSTOMER
-      const customerText = `🌸 *Ваш заказ принят!* \n\n` +
+      const customerText = `🌸 *Ваш заказ оформлен!* \n\n` +
                            `📦 *Заказ:* ${displayId}\n` +
                            `📅 *Дата:* ${orderData.customer.date.split('-').reverse().join('.')}\n` +
                            `⏰ *Время:* ${orderData.customer.time}\n` +
                            `💰 *Сумма:* ${orderData.total} ₽\n\n` +
                            `*Состав:*\n${orderSummary}\n\n` +
-                           `✨ Мы уже начали работу над вашим букетом! Мы пришлем уведомление, когда статус заказа изменится.`;
+                           `✨ Мы пришлем уведомление, когда статус заказа изменится.`;
 
       // 2. Message for the ADMIN
       const adminText = `🚀 *АДМИН: НОВЫЙ ЗАКАЗ*\n\n` +
