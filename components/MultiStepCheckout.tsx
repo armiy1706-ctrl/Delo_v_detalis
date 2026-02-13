@@ -179,7 +179,7 @@ export const MultiStepCheckout: React.FC<MultiStepCheckoutProps> = ({
                 2
               </div>
               <div>
-                <h3 className="font-bold text-stone-800">Адрес доставк��</h3>
+                <h3 className="font-bold text-stone-800">Адрес доставки</h3>
                 <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest">Дата и время</p>
               </div>
             </div>
