@@ -179,7 +179,7 @@ export const MultiStepCheckout: React.FC<MultiStepCheckoutProps> = ({
                 2
               </div>
               <div>
-                <h3 className="font-bold text-stone-800">Адрес доставки</h3>
+                <h3 className="font-bold text-stone-800">Адрес доставк����</h3>
                 <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest">Дата и время</p>
               </div>
             </div>
@@ -366,34 +366,21 @@ export const MultiStepCheckout: React.FC<MultiStepCheckoutProps> = ({
         </div>
       </div>
 
-      {/* Footer Payment Section */}
+      {/* Footer Summary Section */}
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/95 backdrop-blur-xl p-6 rounded-t-[32px] border-t border-stone-100 shadow-[0_-10px_30px_rgba(0,0,0,0.1)] z-50">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between">
           <div className="flex flex-col">
             <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Итого к оплате</span>
             <span className="text-2xl font-bold text-[#0ABAB5]">{total.toLocaleString('ru-RU')} ₽</span>
           </div>
           <div className="text-right">
              <span className="text-[10px] font-bold text-stone-300 uppercase tracking-widest block">Доставка</span>
-             <span className="text-xs font-bold text-stone-600">{info.date.split('-').reverse().join('.')}</span>
+             <span className="text-xs font-bold text-stone-600">
+               {info.date.split('-').reverse().join('.')}
+               {info.time && <span className="ml-1 text-[#0ABAB5]">({info.time})</span>}
+             </span>
           </div>
         </div>
-        
-        {step === 3 && (
-          <motion.button 
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            onClick={() => onComplete(info)}
-            className="w-full py-4 bg-[#D4AF37] text-white rounded-2xl font-bold text-lg shadow-xl shadow-amber-100 flex items-center justify-center gap-3 active:scale-[0.98] transition-all mb-4"
-          >
-            <Wallet className="w-5 h-5" />
-            Перейти к оплате
-          </motion.button>
-        )}
-
-        <p className="text-[10px] text-stone-400 text-center leading-relaxed">
-          Нажимая кнопку, вы подтверждаете данные заказа. Оплата откроется в Telegram.
-        </p>
       </div>
     </div>
   );
