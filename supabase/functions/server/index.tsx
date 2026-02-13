@@ -70,13 +70,16 @@ app.post("/make-server-c325e4cf/orders", async (c) => {
                            `✨ Мы пришлем уведомление, когда статус заказа изменится.`;
 
       // 2. Message for the ADMIN
+      const deliveryDate = orderData.customer.date ? orderData.customer.date.split('-').reverse().join('.') : "не указана";
+      const deliveryTime = orderData.customer.time || "не указано";
+
       const adminText = `🚀 *АДМИН: НОВЫЙ ЗАКАЗ*\n\n` +
                         `📦 *ID:* ${displayId}\n` +
                         `👤 *Заказчик:* ${orderData.customer.name}\n` +
                         `📞 *Тел:* ${orderData.customer.phone}\n` +
                         `📍 *Адрес:* ${orderData.customer.address}, д. ${orderData.customer.house}, кв. ${orderData.customer.flat}\n` +
-                        `📅 *Дата:* ${orderData.customer.date.split('-').reverse().join('.')}\n` +
-                        `⏰ *Время:* ${orderData.customer.time}\n` +
+                        `📅 *Дата доставки:* ${deliveryDate}\n` +
+                        `⏰ *Время доставки:* ${deliveryTime}\n` +
                         `🎁 *Получатель:* ${recipientInfo}\n` +
                         `💬 *Коммент:* ${orderData.customer.comment || "—"}\n` +
                         `💰 *Сумма:* ${orderData.total} ₽\n\n` +
