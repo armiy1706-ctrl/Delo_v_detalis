@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Package, Clock, MapPin, Phone, User, CheckCircle2, Truck, Box, Sparkles, ChevronDown, Users, Coins, Search, Save, X } from 'lucide-react';
+import { Package, MapPin, Phone, User, CheckCircle2, Truck, Box, Sparkles, ChevronDown, Users, Search, X, Clock } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 interface AdminPanelProps {
@@ -25,7 +25,6 @@ interface UserData {
   tgId: number;
   name: string;
   phone: string;
-  points: number;
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ adminId }) => {
@@ -35,7 +34,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ adminId }) => {
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [editingPoints, setEditingPoints] = useState<{tgId: number, value: number} | null>(null);
 
   const statuses = ["Принят", "Собираем заказ", "Заказ собран", "Доставляем заказ", "Доставлено"];
 
@@ -81,29 +79,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ adminId }) => {
       }
     } catch (err) {
       console.error("Error updating status:", err);
-    } finally {
-      setUpdatingId(null);
-    }
-  };
-
-  const updatePoints = async (tgId: number, newPoints: number) => {
-    setUpdatingId(tgId.toString());
-    try {
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-c325e4cf/admin/users/${tgId}/points`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`
-        },
-        body: JSON.stringify({ points: newPoints, adminId })
-      });
-      const data = await response.json();
-      if (data.success) {
-        setUsers(prev => prev.map(u => u.tgId === tgId ? { ...u, points: newPoints } : u));
-        setEditingPoints(null);
-      }
-    } catch (err) {
-      console.error("Error updating points:", err);
     } finally {
       setUpdatingId(null);
     }
@@ -274,8 +249,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ adminId }) => {
               </div>
             ) : (
               filteredUsers.map((user) => (
-                <div key={user.tgId} className="bg-white rounded-[32px] border border-stone-100 shadow-xl overflow-hidden">
-                  <div className="p-5 flex items-center justify-between border-b border-stone-50 bg-stone-50/30">
+                <div key={user.tgId} className="bg-white rounded-[32px] border border-stone-100 shadow-xl overflow-hidden p-5">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 bg-[#0ABAB5]/10 text-[#0ABAB5] rounded-full flex items-center justify-center font-bold text-lg">
                         {user.name.charAt(0)}
@@ -288,58 +263,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ adminId }) => {
                     <div className="text-right">
                        <p className="text-[10px] font-bold text-stone-300 uppercase tracking-widest">ID</p>
                        <p className="text-xs font-mono text-stone-500">{user.tgId}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="p-5 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-amber-50 text-[#D4AF37] rounded-xl flex items-center justify-center">
-                        <Coins className="w-5 h-5" />
-                      </div>
-                      <div>
-                         <p className="text-[10px] font-bold text-stone-300 uppercase tracking-widest">Баланс баллов</p>
-                         <div className="flex items-center gap-2">
-                            {editingPoints?.tgId === user.tgId ? (
-                              <input 
-                                type="number"
-                                value={editingPoints.value}
-                                onChange={(e) => setEditingPoints({...editingPoints, value: parseInt(e.target.value) || 0})}
-                                className="w-20 px-2 py-1 border border-[#D4AF37] rounded-lg text-sm font-bold text-[#D4AF37] focus:outline-none"
-                                autoFocus
-                              />
-                            ) : (
-                              <span className="text-xl font-black text-stone-800">{user.points}</span>
-                            )}
-                            <span className="text-[10px] font-bold text-stone-400">Б</span>
-                         </div>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
-                      {editingPoints?.tgId === user.tgId ? (
-                        <>
-                          <button 
-                            onClick={() => updatePoints(user.tgId, editingPoints.value)}
-                            disabled={updatingId === user.tgId.toString()}
-                            className="p-2.5 bg-[#D4AF37] text-white rounded-xl shadow-md active:scale-95 transition-all"
-                          >
-                            <Save className="w-5 h-5" />
-                          </button>
-                          <button 
-                            onClick={() => setEditingPoints(null)}
-                            className="p-2.5 bg-stone-100 text-stone-400 rounded-xl hover:bg-stone-200 transition-all"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
-                        </>
-                      ) : (
-                        <button 
-                          onClick={() => setEditingPoints({tgId: user.tgId, value: user.points})}
-                          className="px-4 py-2 bg-stone-800 text-white rounded-xl font-bold text-xs shadow-md hover:bg-black active:scale-95 transition-all"
-                        >
-                          Редактировать
-                        </button>
-                      )}
                     </div>
                   </div>
                 </div>
