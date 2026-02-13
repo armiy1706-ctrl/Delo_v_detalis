@@ -292,4 +292,66 @@ app.post("/make-server-c325e4cf/admin/orders/:id/status", async (c) => {
   }
 });
 
+/**
+ * Admin: Get all users with their points (derived from orders)
+ */
+app.get("/make-server-c325e4cf/admin/users", async (c) => {
+  try {
+    const adminId = c.req.query('adminId');
+    if (!adminId) return c.json({ success: false, error: "Unauthorized" }, 401);
+
+    const allOrders = await kv.getByPrefix("order:");
+    const usersMap = new Map();
+
+    for (const order of allOrders) {
+      const tgId = order.customer?.tgId;
+      if (tgId && !usersMap.has(tgId)) {
+        const points = await kv.get(`points:${tgId}`);
+        usersMap.set(tgId, {
+          tgId,
+          name: order.customer.name,
+          phone: order.customer.phone,
+          points: points !== null ? points : 500
+        });
+      }
+    }
+
+    return c.json({ success: true, users: Array.from(usersMap.values()) });
+  } catch (error) {
+    return c.json({ success: false, error: "Failed to fetch users" }, 500);
+  }
+});
+
+/**
+ * Admin: Update user points
+ */
+app.post("/make-server-c325e4cf/admin/users/:tgId/points", async (c) => {
+  try {
+    const tgId = c.req.param('tgId');
+    const { points, adminId } = await c.req.json();
+    if (!adminId) return c.json({ success: false, error: "Unauthorized" }, 401);
+
+    await kv.set(`points:${tgId}`, points);
+    
+    // Notify user about points manual change
+    const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
+    if (botToken) {
+      const text = `✨ *Изменение баланса баллов!*\n\n` +
+                   `Ваш новый баланс: *${points}* баллов.\n\n` +
+                   `Приятных покупок в «Дело в деталях»!`;
+      try {
+        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: tgId, text, parse_mode: 'Markdown' })
+        });
+      } catch (tgError) {}
+    }
+
+    return c.json({ success: true, points });
+  } catch (error) {
+    return c.json({ success: false, error: "Failed to update points" }, 500);
+  }
+});
+
 Deno.serve(app.fetch);
