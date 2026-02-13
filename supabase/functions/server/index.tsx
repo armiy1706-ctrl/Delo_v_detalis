@@ -63,8 +63,8 @@ app.post("/make-server-c325e4cf/orders", async (c) => {
       // 1. Message for the CUSTOMER
       const customerText = `🌸 *Ваш заказ оформлен!* \n\n` +
                            `📦 *Заказ:* ${displayId}\n` +
-                           `📅 *Дата:* ${orderData.customer.date.split('-').reverse().join('.')}\n` +
-                           `⏰ *Время:* ${orderData.customer.time}\n` +
+                           `📅 *Дата доставки:* ${orderData.customer.date.split('-').reverse().join('.')}\n` +
+                           `⏰ *Время доставки:* ${orderData.customer.time}\n` +
                            `💰 *Сумма:* ${orderData.total} ₽\n\n` +
                            `*Состав:*\n${orderSummary}\n\n` +
                            `✨ Мы пришлем уведомление, когда статус заказа изменится.`;
