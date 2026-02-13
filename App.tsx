@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShoppingCart, ArrowLeft, X, Heart, Search, Menu, User, Minus, Plus, Loader2, Package, Wallet, Gift } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, X, Heart, Search, Menu, User, Minus, Plus, Loader2, Package, Wallet } from 'lucide-react';
 import { ProductCard } from './components/ProductCard';
 import { ProductModal } from './components/ProductModal';
 import { CartPage } from './components/CartPage';
@@ -96,8 +96,6 @@ export default function App() {
   const [orderId, setOrderId] = useState<string | null>(null);
   const [tgUser, setTgUser] = useState<any>(null);
   const [ratings, setRatings] = useState<Record<string, { average: number, count: number }>>({});
-  const [userPoints, setUserPoints] = useState(500); // Initial mock points
-  const [usePoints, setUsePoints] = useState(false);
   
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     name: '',
@@ -127,7 +125,6 @@ export default function App() {
           tgId: tg.initDataUnsafe.user.id,
           name: prev.name || `${tg.initDataUnsafe.user.first_name} ${tg.initDataUnsafe.user.last_name || ''}`.trim()
         }));
-        fetchUserPoints(tg.initDataUnsafe.user.id);
       }
     }
     
@@ -139,20 +136,6 @@ export default function App() {
     fetchRatings();
   }, []);
 
-  const fetchUserPoints = async (userId: number) => {
-    try {
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-c325e4cf/user-points/${userId}`, {
-        headers: { 'Authorization': `Bearer ${publicAnonKey}` }
-      });
-      const data = await response.json();
-      if (data.success) {
-        setUserPoints(data.points);
-      }
-    } catch (err) {
-      console.error("Error fetching points:", err);
-    }
-  };
-
   const fetchRatings = async () => {
     try {
       const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-c325e4cf/ratings`, {
@@ -160,7 +143,7 @@ export default function App() {
       });
       const data = await response.json();
       if (data.success) {
-        setRatings(data.summary);
+        setRatings(data.summary || {});
       }
     } catch (err) {
       console.error("Error fetching ratings:", err);
@@ -168,11 +151,11 @@ export default function App() {
   };
 
   const toggleFavorite = (product: Product) => {
-    setFavorites(prev => 
-      prev.includes(product.id) 
-        ? prev.filter(id => id !== product.id) 
-        : [...prev, product.id]
-    );
+    const newFavorites = favorites.includes(product.id) 
+      ? favorites.filter(id => id !== product.id) 
+      : [...favorites, product.id];
+    setFavorites(newFavorites);
+    localStorage.setItem('bloom_favorites', JSON.stringify(newFavorites));
   };
 
   const addToCart = (product: Product, quantity: number = 1) => {
@@ -202,8 +185,7 @@ export default function App() {
   const itemsTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const serviceCharge = Math.round(itemsTotal * 0.1);
   const deliveryCost = 350;
-  const discount = usePoints ? Math.min(userPoints, itemsTotal) : 0;
-  const finalTotal = itemsTotal + serviceCharge + deliveryCost - discount;
+  const finalTotal = itemsTotal + serviceCharge + deliveryCost;
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const handleCheckout = async (info: CustomerInfo) => {
@@ -218,9 +200,7 @@ export default function App() {
         body: JSON.stringify({
           customer: info,
           items: cart,
-          total: finalTotal,
-          pointsUsed: discount,
-          pointsEarned: Math.round(itemsTotal * 0.01)
+          total: finalTotal
         })
       });
 
@@ -228,8 +208,6 @@ export default function App() {
       if (result.success) {
         setOrderId(result.orderId);
         setCurrentPage('confirmation');
-        // Update local points immediately
-        setUserPoints(prev => prev - discount + Math.round(itemsTotal * 0.01));
       } else {
         alert("Ошибка при оформлении заказа.");
       }
@@ -243,27 +221,19 @@ export default function App() {
   const resetOrder = () => {
     setCart([]);
     setOrderId(null);
-    setUsePoints(false);
     setCurrentPage('home');
   };
 
   return (
     <div className="min-h-screen bg-[#0ABAB5] font-sans text-stone-900 pb-24">
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-stone-100 px-4 py-4 flex items-center justify-between max-w-md mx-auto rounded-b-2xl">
+      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-stone-100 px-4 py-4 flex items-center justify-between max-w-md mx-auto rounded-b-2xl shadow-sm">
         <div className="flex items-center gap-3">
-          <button className="p-2 -ml-2 text-stone-500 hover:text-stone-900 transition-colors">
-            <Menu className="w-6 h-6" />
-          </button>
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => setCurrentPage('home')}>
             <div className="w-8 h-8 bg-[#D4AF37] rounded-lg flex items-center justify-center text-white font-bold">D</div>
             <span className="text-lg font-bold bg-gradient-to-r from-[#D4AF37] to-[#B8860B] bg-clip-text text-transparent serif">Дело в деталях</span>
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <div className="hidden sm:flex items-center gap-2 bg-stone-50 px-3 py-1.5 rounded-full border border-stone-100 mr-2">
-            <Gift className="w-4 h-4 text-[#D4AF37]" />
-            <span className="text-xs font-bold text-stone-600">{userPoints}</span>
-          </div>
           <button 
             onClick={() => setCurrentPage('cart')}
             className="relative p-2 text-stone-500 hover:text-stone-900 transition-colors"
@@ -342,9 +312,6 @@ export default function App() {
                 items={cart} 
                 updateQuantity={updateQuantity} 
                 removeFromCart={removeFromCart} 
-                userPoints={userPoints}
-                usePoints={usePoints}
-                setUsePoints={setUsePoints}
                 onCheckout={() => setCurrentPage('checkout')}
               />
             </motion.div>
@@ -374,7 +341,7 @@ export default function App() {
           )}
 
           {currentPage === 'profile' && (
-            <ProfilePage key="profile" user={tgUser} points={userPoints} />
+            <ProfilePage key="profile" user={tgUser} />
           )}
 
           {currentPage === 'admin' && (
