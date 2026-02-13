@@ -75,6 +75,8 @@ app.post("/make-server-c325e4cf/orders", async (c) => {
                         `👤 *Заказчик:* ${orderData.customer.name}\n` +
                         `📞 *Тел:* ${orderData.customer.phone}\n` +
                         `📍 *Адрес:* ${orderData.customer.address}, д. ${orderData.customer.house}, кв. ${orderData.customer.flat}\n` +
+                        `📅 *Дата:* ${orderData.customer.date.split('-').reverse().join('.')}\n` +
+                        `⏰ *Время:* ${orderData.customer.time}\n` +
                         `🎁 *Получатель:* ${recipientInfo}\n` +
                         `💬 *Коммент:* ${orderData.customer.comment || "—"}\n` +
                         `💰 *Сумма:* ${orderData.total} ₽\n\n` +
