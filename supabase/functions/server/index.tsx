@@ -57,21 +57,30 @@ app.post("/make-server-c325e4cf/orders", async (c) => {
       const displayId = `#${orderId.replace('order:', '')}`;
       
       const recipientInfo = orderData.customer.isRecipient 
-        ? "_Тот же, что и заказчик_" 
-        : `👤 ${orderData.customer.recipientName}\n📞 ${orderData.customer.recipientPhone}`;
+        ? "Тот же, что и заказчик" 
+        : `${orderData.customer.recipientName} (${orderData.customer.recipientPhone})`;
 
-      const text = `🌸 *Новый заказ!* \n\n` +
-                   `📦 *ID:* ${displayId}\n` +
-                   `👤 *Заказчик:* ${orderData.customer.name}\n` +
-                   `📞 *Тел:* ${orderData.customer.phone}\n` +
-                   `📍 *Адрес:* ${orderData.customer.city}, ${orderData.customer.address}, д. ${orderData.customer.house}, кв. ${orderData.customer.flat}\n` +
-                   `⏰ *Доставка:* ${orderData.customer.date} в ${orderData.customer.time}\n` +
-                   `🎁 *Получатель:* ${recipientInfo}\n` +
-                   `💬 *Комментарий:* ${orderData.customer.comment || "_нет_"}\n` +
-                   `💰 *Сумма:* ${orderData.total} ₽\n\n` +
-                   `*Букеты:*\n${orderSummary}`;
+      // 1. Message for the CUSTOMER
+      const customerText = `🌸 *Ваш заказ принят!* \n\n` +
+                           `📦 *Заказ:* ${displayId}\n` +
+                           `📅 *Дата:* ${orderData.customer.date.split('-').reverse().join('.')}\n` +
+                           `⏰ *Время:* ${orderData.customer.time}\n` +
+                           `💰 *Сумма:* ${orderData.total} ₽\n\n` +
+                           `*Состав:*\n${orderSummary}\n\n` +
+                           `✨ Мы уже начали работу над вашим букетом! Мы пришлем уведомление, когда статус заказа изменится.`;
 
-      // 1. Send to Customer (if tgId exists)
+      // 2. Message for the ADMIN
+      const adminText = `🚀 *АДМИН: НОВЫЙ ЗАКАЗ*\n\n` +
+                        `📦 *ID:* ${displayId}\n` +
+                        `👤 *Заказчик:* ${orderData.customer.name}\n` +
+                        `📞 *Тел:* ${orderData.customer.phone}\n` +
+                        `📍 *Адрес:* ${orderData.customer.address}, д. ${orderData.customer.house}, кв. ${orderData.customer.flat}\n` +
+                        `🎁 *Получатель:* ${recipientInfo}\n` +
+                        `💬 *Коммент:* ${orderData.customer.comment || "—"}\n` +
+                        `💰 *Сумма:* ${orderData.total} ₽\n\n` +
+                        `*Букеты:*\n${orderSummary}`;
+
+      // Send to Customer
       if (tgId) {
         const historyKey = `history:${tgId}`;
         const history = await kv.get(historyKey) || [];
@@ -81,15 +90,14 @@ app.post("/make-server-c325e4cf/orders", async (c) => {
           await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: tgId, text, parse_mode: 'Markdown' })
+            body: JSON.stringify({ chat_id: tgId, text: customerText, parse_mode: 'Markdown' })
           });
         } catch (e) { console.error("Error sending to customer:", e); }
       }
 
-      // 2. Send to Admin (if adminChatId exists)
+      // Send to Admin
       if (adminChatId) {
         try {
-          const adminText = `🚀 *АДМИН: НОВЫЙ ЗАКАЗ*\n\n` + text;
           await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
