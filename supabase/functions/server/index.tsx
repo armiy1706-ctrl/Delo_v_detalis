@@ -42,38 +42,53 @@ app.post("/make-server-c325e4cf/orders", async (c) => {
     // Save to KV store
     await kv.set(orderId, fullOrder);
 
-    // Handle history
+    // Handle notifications
+    const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
+    const adminChatId = Deno.env.get('TELEGRAM_ADMIN_CHAT_ID');
     const tgId = orderData.customer?.tgId;
-    if (tgId) {
-      const historyKey = `history:${tgId}`;
-      const history = await kv.get(historyKey) || [];
-      await kv.set(historyKey, [...history, orderId]);
 
-      // Send Telegram notification
-      const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
-      if (botToken) {
-        const text = `🌸 *Новый заказ!* \n\n` +
-                     `📦 *ID:* ${orderId.split('-')[0].replace('order:', '')}\n` +
-                     `👤 *Клиент:* ${orderData.customer.name}\n` +
-                     `📞 *Тел:* ${orderData.customer.phone}\n` +
-                     `📍 *Адрес:* ${orderData.customer.city}, ${orderData.customer.address}, д. ${orderData.customer.house}, кв. ${orderData.customer.flat}\n` +
-                     `⏰ *Доставка:* ${orderData.customer.date} в ${orderData.customer.time}\n` +
-                     `💰 *Сумма:* ${orderData.total} ₽\n\n` +
-                     `Букеты:\n${orderData.items.map((i: any) => `- ${i.name} (${i.quantity} шт)`).join('\n')}`;
-        
+    if (botToken) {
+      const orderSummary = orderData.items.map((i: any) => `- ${i.name} (${i.quantity} шт)`).join('\n');
+      const recipientInfo = orderData.customer.isRecipient 
+        ? "_Тот же, что и заказчик_" 
+        : `👤 ${orderData.customer.recipientName}\n📞 ${orderData.customer.recipientPhone}`;
+
+      const text = `🌸 *Новый заказ!* \n\n` +
+                   `📦 *ID:* ${orderId.split('-')[0].replace('order:', '')}\n` +
+                   `👤 *Заказчик:* ${orderData.customer.name}\n` +
+                   `📞 *Тел:* ${orderData.customer.phone}\n` +
+                   `📍 *Адрес:* ${orderData.customer.city}, ${orderData.customer.address}, д. ${orderData.customer.house}, кв. ${orderData.customer.flat}\n` +
+                   `⏰ *Доставка:* ${orderData.customer.date} в ${orderData.customer.time}\n` +
+                   `🎁 *Получатель:* ${recipientInfo}\n` +
+                   `💬 *Комментарий:* ${orderData.customer.comment || "_нет_"}\n` +
+                   `💰 *Сумма:* ${orderData.total} ₽\n\n` +
+                   `*Букеты:*\n${orderSummary}`;
+
+      // 1. Send to Customer (if tgId exists)
+      if (tgId) {
+        const historyKey = `history:${tgId}`;
+        const history = await kv.get(historyKey) || [];
+        await kv.set(historyKey, [...history, orderId]);
+
         try {
           await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chat_id: tgId,
-              text,
-              parse_mode: 'Markdown'
-            })
+            body: JSON.stringify({ chat_id: tgId, text, parse_mode: 'Markdown' })
           });
-        } catch (tgError) {
-          console.error(`Telegram notification failed: ${tgError}`);
-        }
+        } catch (e) { console.error("Error sending to customer:", e); }
+      }
+
+      // 2. Send to Admin (if adminChatId exists)
+      if (adminChatId) {
+        try {
+          const adminText = `🚀 *АДМИН: НОВЫЙ ЗАКАЗ*\n\n` + text;
+          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: adminChatId, text: adminText, parse_mode: 'Markdown' })
+          });
+        } catch (e) { console.error("Error sending to admin:", e); }
       }
     }
 
