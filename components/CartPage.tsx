@@ -35,8 +35,7 @@ export const CartPage: React.FC<CartPageProps> = ({
   const deliveryCost = 350;
   const potentialPoints = Math.round(itemsTotal * 0.01); // 1% cashback
   
-  const discount = usePoints ? Math.min(Math.floor(userPoints * 0.3), itemsTotal) : 0;
-  const total = itemsTotal + serviceCharge + deliveryCost - discount;
+  const total = itemsTotal + serviceCharge + deliveryCost;
 
   if (items.length === 0) {
     return (
@@ -108,33 +107,6 @@ export const CartPage: React.FC<CartPageProps> = ({
             {deliveryCost} ₽
           </div>
         </div>
-      </div>
-
-      {/* Bonus Points Toggle */}
-      <div className="bg-white rounded-[24px] p-5 shadow-xl border border-stone-100 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#D4AF37]/10 rounded-full flex items-center justify-center text-[#D4AF37]">
-              <Gift className="w-5 h-5" />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-bold text-stone-700">Списать баллы (30%)</span>
-              <span className="text-[10px] text-[#D4AF37] font-bold uppercase tracking-wider">Доступно: {Math.floor(userPoints * 0.3)} Б</span>
-            </div>
-          </div>
-          <button 
-            onClick={() => userPoints > 0 && setUsePoints(!usePoints)}
-            disabled={userPoints === 0}
-            className={`w-12 h-6 rounded-full transition-all relative ${usePoints ? 'bg-[#D4AF37]' : 'bg-stone-200'}`}
-          >
-            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${usePoints ? 'left-7' : 'left-1'}`} />
-          </button>
-        </div>
-        {usePoints && (
-          <div className="text-[10px] text-stone-400 italic px-2">
-            *Можно списать не более 30% от накопленных баллов
-          </div>
-        )}
       </div>
 
       {/* Summary & Checkout */}
