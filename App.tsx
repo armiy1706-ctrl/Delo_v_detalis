@@ -189,6 +189,9 @@ export default function App() {
 
   const handleCheckout = async (info: CustomerInfo) => {
     setIsSubmitting(true);
+    // Store info locally to ensure it is available for confirmation screen
+    setCustomerInfo(info);
+    
     try {
       const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-c325e4cf/orders`, {
         method: 'POST',
@@ -218,9 +221,10 @@ export default function App() {
   };
 
   const resetOrder = () => {
-    setCart([]);
+    // Keep customer info for next orders but clear order specific fields if needed
     setOrderId(null);
     setCurrentPage('home');
+    setCart([]); // Moved here from handleCheckout if it was there
   };
 
   return (
@@ -335,6 +339,7 @@ export default function App() {
                 total={finalTotal}
                 deliveryDate={customerInfo.date}
                 onReset={resetOrder}
+                cartItems={cart}
               />
             </motion.div>
           )}
