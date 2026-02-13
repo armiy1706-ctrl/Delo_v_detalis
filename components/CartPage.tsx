@@ -15,9 +15,6 @@ interface CartPageProps {
   items: CartItem[];
   updateQuantity: (id: number, delta: number) => void;
   removeFromCart: (id: number) => void;
-  userPoints: number;
-  usePoints: boolean;
-  setUsePoints: (value: boolean) => void;
   onCheckout: () => void;
 }
 
@@ -25,17 +22,11 @@ export const CartPage: React.FC<CartPageProps> = ({
   items,
   updateQuantity,
   removeFromCart,
-  userPoints,
-  usePoints,
-  setUsePoints,
   onCheckout
 }) => {
   const itemsTotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const serviceCharge = Math.round(itemsTotal * 0.1); // 10% service charge
   const deliveryCost = 350;
-  const potentialPoints = Math.round(itemsTotal * 0.01); // 1% cashback
-  
-  const total = itemsTotal + serviceCharge + deliveryCost;
+  const total = itemsTotal + deliveryCost;
 
   if (items.length === 0) {
     return (
@@ -91,17 +82,12 @@ export const CartPage: React.FC<CartPageProps> = ({
         </div>
       </div>
 
-      {/* Service Charge & Delivery */}
-      <div className="bg-white rounded-[24px] p-5 shadow-xl border border-stone-100 space-y-4">
-        <div className="flex justify-between items-center text-sm">
-          <span className="text-stone-400 font-bold uppercase tracking-wider">Сервисный сбор</span>
-          <span className="font-bold text-stone-800">{serviceCharge.toLocaleString('ru-RU')} ₽</span>
-        </div>
-        
+      {/* Delivery Info */}
+      <div className="bg-white rounded-[24px] p-5 shadow-xl border border-stone-100">
         <div className="bg-stone-50 rounded-2xl p-4 border border-stone-100 flex items-center justify-between">
           <div className="flex flex-col">
             <span className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-1">Ближайшая доставка</span>
-            <span className="text-sm font-bold text-stone-700">Сегодня, 18:00 - 20:00</span>
+            <span className="text-sm font-bold text-stone-700">Сегодня, 60-90 минут</span>
           </div>
           <div className="bg-[#D4AF37]/10 text-[#D4AF37] px-3 py-1.5 rounded-xl text-xs font-bold border border-[#D4AF37]/20">
             {deliveryCost} ₽
@@ -113,12 +99,7 @@ export const CartPage: React.FC<CartPageProps> = ({
       <div className="bg-white rounded-[32px] p-6 shadow-xl border border-stone-100 space-y-6">
         <div className="flex justify-between items-center">
           <span className="text-lg font-bold text-stone-800 serif">Итого:</span>
-          <div className="flex flex-col items-end">
-             {usePoints && discount > 0 && (
-               <span className="text-xs text-red-500 font-bold line-through">{(total + discount).toLocaleString('ru-RU')} ₽</span>
-             )}
-             <span className="text-2xl font-bold text-[#D4AF37]">{total.toLocaleString('ru-RU')} ₽</span>
-          </div>
+          <span className="text-2xl font-bold text-[#D4AF37]">{total.toLocaleString('ru-RU')} ₽</span>
         </div>
 
         <button 
@@ -128,20 +109,6 @@ export const CartPage: React.FC<CartPageProps> = ({
           Перейти к оформлению
           <ChevronRight className="w-5 h-5" />
         </button>
-
-        <div className="bg-stone-50 rounded-2xl p-4 space-y-3">
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-stone-400 font-medium">Накоплено баллов:</span>
-            <span className="font-bold text-stone-800">{userPoints}</span>
-          </div>
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-stone-400 font-medium">Будет начислено:</span>
-            <span className="font-bold text-[#D4AF37]">+{potentialPoints}</span>
-          </div>
-          <div className="pt-2 border-t border-stone-100 flex justify-center">
-            <span className="text-[10px] text-stone-400 font-bold uppercase tracking-widest">1 балл = 1 рубль</span>
-          </div>
-        </div>
       </div>
     </div>
   );
