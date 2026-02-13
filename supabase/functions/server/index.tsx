@@ -22,21 +22,7 @@ app.use(
 
 // Health check endpoint
 app.get("/make-server-c325e4cf/health", (c) => {
-  return c.json({ status: "ok" });
-});
-
-/**
- * Get user points
- */
-app.get("/make-server-c325e4cf/user-points/:tgId", async (c) => {
-  try {
-    const tgId = c.req.param('tgId');
-    const pointsKey = `points:${tgId}`;
-    const points = await kv.get(pointsKey);
-    return c.json({ success: true, points: points !== null ? points : 500 }); // Default 500 for new users
-  } catch (error) {
-    return c.json({ success: false, error: "Failed to fetch points" }, 500);
-  }
+  return c.json({ success: true, status: "ok" });
 });
 
 /**
@@ -56,21 +42,12 @@ app.post("/make-server-c325e4cf/orders", async (c) => {
     // Save to KV store
     await kv.set(orderId, fullOrder);
 
-    // Handle points and history
+    // Handle history
     const tgId = orderData.customer?.tgId;
     if (tgId) {
-      // History
       const historyKey = `history:${tgId}`;
       const history = await kv.get(historyKey) || [];
       await kv.set(historyKey, [...history, orderId]);
-
-      // Points Logic
-      const pointsKey = `points:${tgId}`;
-      const currentPoints = await kv.get(pointsKey) !== null ? await kv.get(pointsKey) : 500;
-      const pointsUsed = orderData.pointsUsed || 0;
-      const pointsEarned = orderData.pointsEarned || 0;
-      const newPoints = Math.max(0, currentPoints - pointsUsed + pointsEarned);
-      await kv.set(pointsKey, newPoints);
 
       // Send Telegram notification
       const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
@@ -81,9 +58,7 @@ app.post("/make-server-c325e4cf/orders", async (c) => {
                      `📞 *Тел:* ${orderData.customer.phone}\n` +
                      `📍 *Адрес:* ${orderData.customer.city}, ${orderData.customer.address}, д. ${orderData.customer.house}, кв. ${orderData.customer.flat}\n` +
                      `⏰ *Доставка:* ${orderData.customer.date} в ${orderData.customer.time}\n` +
-                     `💰 *Сумма:* ${orderData.total} ₽\n` +
-                     (pointsUsed > 0 ? `🎁 *Списано баллов:* ${pointsUsed}\n` : '') +
-                     `✨ *Начислено баллов:* ${pointsEarned}\n\n` +
+                     `💰 *Сумма:* ${orderData.total} ₽\n\n` +
                      `Букеты:\n${orderData.items.map((i: any) => `- ${i.name} (${i.quantity} шт)`).join('\n')}`;
         
         try {
@@ -293,7 +268,7 @@ app.post("/make-server-c325e4cf/admin/orders/:id/status", async (c) => {
 });
 
 /**
- * Admin: Get all users with their points (derived from orders)
+ * Admin: Get all users
  */
 app.get("/make-server-c325e4cf/admin/users", async (c) => {
   try {
@@ -306,12 +281,10 @@ app.get("/make-server-c325e4cf/admin/users", async (c) => {
     for (const order of allOrders) {
       const tgId = order.customer?.tgId;
       if (tgId && !usersMap.has(tgId)) {
-        const points = await kv.get(`points:${tgId}`);
         usersMap.set(tgId, {
           tgId,
           name: order.customer.name,
-          phone: order.customer.phone,
-          points: points !== null ? points : 500
+          phone: order.customer.phone
         });
       }
     }
@@ -322,36 +295,9 @@ app.get("/make-server-c325e4cf/admin/users", async (c) => {
   }
 });
 
-/**
- * Admin: Update user points
- */
-app.post("/make-server-c325e4cf/admin/users/:tgId/points", async (c) => {
-  try {
-    const tgId = c.req.param('tgId');
-    const { points, adminId } = await c.req.json();
-    if (!adminId) return c.json({ success: false, error: "Unauthorized" }, 401);
-
-    await kv.set(`points:${tgId}`, points);
-    
-    // Notify user about points manual change
-    const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
-    if (botToken) {
-      const text = `✨ *Изменение баланса баллов!*\n\n` +
-                   `Ваш новый баланс: *${points}* баллов.\n\n` +
-                   `Приятных покупок в «Дело в деталях»!`;
-      try {
-        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: tgId, text, parse_mode: 'Markdown' })
-        });
-      } catch (tgError) {}
-    }
-
-    return c.json({ success: true, points });
-  } catch (error) {
-    return c.json({ success: false, error: "Failed to update points" }, 500);
-  }
+// Default 404 handler to ensure JSON response
+app.notFound((c) => {
+  return c.json({ success: false, error: "Route not found" }, 404);
 });
 
 Deno.serve(app.fetch);
