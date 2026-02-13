@@ -189,7 +189,6 @@ export default function App() {
 
   const handleCheckout = async (info: CustomerInfo) => {
     setIsSubmitting(true);
-    // Store info locally to ensure it is available for confirmation screen
     setCustomerInfo(info);
     
     try {
@@ -208,7 +207,11 @@ export default function App() {
 
       const result = await response.json();
       if (result.success) {
-        setOrderId(result.orderId);
+        // Create a shorter order number starting from #1000 base
+        // In a real app, this would come from the DB sequence, but for prototype:
+        const timestamp = Date.now().toString().slice(-4);
+        const displayId = `#${1000 + parseInt(timestamp) % 9000}`;
+        setOrderId(displayId);
         setCurrentPage('confirmation');
       } else {
         alert("Ошибка при оформлении заказа.");
